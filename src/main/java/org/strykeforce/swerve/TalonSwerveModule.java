@@ -42,7 +42,7 @@ public class TalonSwerveModule implements SwerveModule {
 
   private double azimuthCountsToRadians(double encoderCounts) {
     double azimuthCounts = Math.IEEEremainder(encoderCounts, azimuthCountsPerRev);
-    return (azimuthCounts / azimuthCountsPerRev) * (2 * Math.PI);
+    return (azimuthCounts / azimuthCountsPerRev) * (2.0 * Math.PI);
   }
 
   private double driveCountsToMetersPerSecond(double encoderCountsPer100ms) {
@@ -53,8 +53,8 @@ public class TalonSwerveModule implements SwerveModule {
   }
 
   public static class Builder {
-    private static final int kDefaultTalonSRXCountsPerRev = 4096;
-    private static final int kDefaultTalonFXCountsPerRev = 2048;
+    public static final int kDefaultTalonSRXCountsPerRev = 4096;
+    public static final int kDefaultTalonFXCountsPerRev = 2048;
 
     private final BaseTalon azimuthTalon;
     private final BaseTalon driveTalon;
