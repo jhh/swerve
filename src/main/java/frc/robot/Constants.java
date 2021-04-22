@@ -22,5 +22,6 @@ public final class Constants {
         (kDriveMotorOutputGear / kDriveInputGear) * (kBevelInputGear / kBevelOutputGear);
 
     public static final double kWheelDiameterInches = 3;
+    public static final double kDriveMaximumMetersPerSecond  = 3.84020432; // 6300 rpm
   }
 }

@@ -1,5 +1,6 @@
 package org.strykeforce.swerve;
 
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.BaseTalon;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
@@ -16,6 +17,7 @@ public class TalonSwerveModule implements SwerveModule {
   private final double driveCountsPerRev;
   private final double driveGearRatio;
   private final double wheelCircumferenceMeters;
+  private final double driveMaximumMetersPerSecond;
 
   private TalonSwerveModule(Builder builder) {
     this.azimuthTalon = builder.azimuthTalon;
@@ -24,32 +26,62 @@ public class TalonSwerveModule implements SwerveModule {
     this.driveCountsPerRev = builder.driveCountsPerRev;
     driveGearRatio = builder.driveGearRatio;
     this.wheelCircumferenceMeters = Math.PI * Units.inchesToMeters(builder.wheelDiameterInches);
+    this.driveMaximumMetersPerSecond = builder.driveMaximumMetersPerSecond;
   }
 
   @Override
   public SwerveModuleState getState() {
-    double azimuthPosition = azimuthTalon.getSelectedSensorPosition();
-    var angle = new Rotation2d(azimuthCountsToRadians(azimuthPosition));
-
-    double driveVelocity = driveTalon.getSelectedSensorVelocity();
-    double speedMetersPerSecond = driveCountsToMetersPerSecond(driveVelocity);
-
+    double speedMetersPerSecond = getDriveMetersPerSecond();
+    Rotation2d angle = getAzimuthRotation2d();
     return new SwerveModuleState(speedMetersPerSecond, angle);
   }
 
   @Override
-  public void setDesiredState(SwerveModuleState desiredState) {}
-
-  private double azimuthCountsToRadians(double encoderCounts) {
-    double azimuthCounts = Math.IEEEremainder(encoderCounts, azimuthCountsPerRev);
-    return (azimuthCounts / azimuthCountsPerRev) * (2.0 * Math.PI);
+  public void setOpenLoopDesiredState(SwerveModuleState desiredState) {
+    Rotation2d currentAngle = getAzimuthRotation2d();
+    SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, currentAngle);
+    setAzimuthRotation2d(optimizedState.angle);
+    setDriveOpenLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
   }
 
-  private double driveCountsToMetersPerSecond(double encoderCountsPer100ms) {
+  @Override
+  public void setClosedLoopDesiredState(SwerveModuleState desiredState) {
+    Rotation2d currentAngle = getAzimuthRotation2d();
+    SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, currentAngle);
+    setAzimuthRotation2d(optimizedState.angle);
+    setDriveClosedLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
+  }
+
+  private Rotation2d getAzimuthRotation2d() {
+    double azimuthRawCounts = azimuthTalon.getSelectedSensorPosition();
+    double azimuthCounts = Math.IEEEremainder(azimuthRawCounts, azimuthCountsPerRev);
+    double radians = 2.0 * Math.PI * azimuthCounts / azimuthCountsPerRev;
+    return new Rotation2d(radians);
+  }
+
+  private void setAzimuthRotation2d(Rotation2d angle) {
+    double azimuthRawCounts = azimuthTalon.getSelectedSensorPosition();
+    double azimuthCountsChange = angle.getRadians() / (2.0 * Math.PI);
+    azimuthTalon.set(ControlMode.MotionMagic, azimuthRawCounts + azimuthCountsChange);
+  }
+
+  private double getDriveMetersPerSecond() {
+    double encoderCountsPer100ms = driveTalon.getSelectedSensorVelocity();
     double motorRotationsPer100ms = encoderCountsPer100ms / driveCountsPerRev;
     double wheelRotationsPer100ms = motorRotationsPer100ms * driveGearRatio;
     double metersPer100ms = wheelRotationsPer100ms * wheelCircumferenceMeters;
     return metersPer100ms * k100msPerSecond;
+  }
+
+  private void setDriveOpenLoopMetersPerSecond(double metersPerSecond) {
+    driveTalon.set(ControlMode.PercentOutput, metersPerSecond / driveMaximumMetersPerSecond);
+  }
+
+  private void setDriveClosedLoopMetersPerSecond(double metersPerSecond) {
+    double wheelRotationsPerSecond = metersPerSecond / wheelCircumferenceMeters;
+    double motorRotationsPerSecond = wheelRotationsPerSecond / driveGearRatio;
+    double encoderCountsPerSecond = motorRotationsPerSecond * driveCountsPerRev;
+    driveTalon.set(ControlMode.Velocity, encoderCountsPerSecond / k100msPerSecond);
   }
 
   public static class Builder {
@@ -63,6 +95,7 @@ public class TalonSwerveModule implements SwerveModule {
     private double wheelDiameterInches;
     private int driveCountsPerRev = kDefaultTalonFXCountsPerRev;
     private int azimuthCountsPerRev = kDefaultTalonSRXCountsPerRev;
+    private double driveMaximumMetersPerSecond;
 
     public Builder(BaseTalon azimuthTalon, BaseTalon driveTalon) {
       this.azimuthTalon = Objects.requireNonNull(azimuthTalon);
@@ -86,6 +119,11 @@ public class TalonSwerveModule implements SwerveModule {
 
     public Builder azimuthEncoderCountsPerRevolution(int countsPerRev) {
       azimuthCountsPerRev = countsPerRev;
+      return this;
+    }
+
+    public Builder driveMaximumMetersPerSecond(double metersPerSecond) {
+      driveMaximumMetersPerSecond = metersPerSecond;
       return this;
     }
 
