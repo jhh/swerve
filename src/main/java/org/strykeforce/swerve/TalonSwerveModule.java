@@ -3,12 +3,13 @@ package org.strykeforce.swerve;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.BaseTalon;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.util.Units;
-
 import java.util.Objects;
 
 public class TalonSwerveModule implements SwerveModule {
+
   final int k100msPerSecond = 10;
 
   private final BaseTalon azimuthTalon;
@@ -18,15 +19,22 @@ public class TalonSwerveModule implements SwerveModule {
   private final double driveGearRatio;
   private final double wheelCircumferenceMeters;
   private final double driveMaximumMetersPerSecond;
+  private final Translation2d wheelLocationMeters;
 
   private TalonSwerveModule(Builder builder) {
-    this.azimuthTalon = builder.azimuthTalon;
-    this.driveTalon = builder.driveTalon;
-    this.azimuthCountsPerRev = builder.azimuthCountsPerRev;
-    this.driveCountsPerRev = builder.driveCountsPerRev;
+    azimuthTalon = builder.azimuthTalon;
+    driveTalon = builder.driveTalon;
+    azimuthCountsPerRev = builder.azimuthCountsPerRev;
+    driveCountsPerRev = builder.driveCountsPerRev;
     driveGearRatio = builder.driveGearRatio;
-    this.wheelCircumferenceMeters = Math.PI * Units.inchesToMeters(builder.wheelDiameterInches);
-    this.driveMaximumMetersPerSecond = builder.driveMaximumMetersPerSecond;
+    wheelCircumferenceMeters = Math.PI * Units.inchesToMeters(builder.wheelDiameterInches);
+    driveMaximumMetersPerSecond = builder.driveMaximumMetersPerSecond;
+    wheelLocationMeters = builder.wheelLocationMeters;
+  }
+
+  @Override
+  public Translation2d getWheelLocationMeters() {
+    return wheelLocationMeters;
   }
 
   @Override
@@ -52,17 +60,24 @@ public class TalonSwerveModule implements SwerveModule {
     setDriveClosedLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
   }
 
+  @Override
+  public void storeAzimuthZeroReference() {
+    String preferenceKey = getKey();
+//    azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF;
+  }
+
+
   private Rotation2d getAzimuthRotation2d() {
-    double azimuthRawCounts = azimuthTalon.getSelectedSensorPosition();
-    double azimuthCounts = Math.IEEEremainder(azimuthRawCounts, azimuthCountsPerRev);
+    double azimuthCounts = azimuthTalon.getSelectedSensorPosition();
     double radians = 2.0 * Math.PI * azimuthCounts / azimuthCountsPerRev;
     return new Rotation2d(radians);
   }
 
   private void setAzimuthRotation2d(Rotation2d angle) {
-    double azimuthRawCounts = azimuthTalon.getSelectedSensorPosition();
-    double azimuthCountsChange = angle.getRadians() / (2.0 * Math.PI);
-    azimuthTalon.set(ControlMode.MotionMagic, azimuthRawCounts + azimuthCountsChange);
+    double countsBefore = azimuthTalon.getSelectedSensorPosition();
+    double countsFromAngle = angle.getRadians() / (2.0 * Math.PI) * azimuthCountsPerRev;
+    double countsDelta = Math.IEEEremainder(countsFromAngle - countsBefore, azimuthCountsPerRev);
+    azimuthTalon.set(ControlMode.MotionMagic, countsBefore + countsDelta);
   }
 
   private double getDriveMetersPerSecond() {
@@ -84,7 +99,26 @@ public class TalonSwerveModule implements SwerveModule {
     driveTalon.set(ControlMode.Velocity, encoderCountsPerSecond / k100msPerSecond);
   }
 
+  private String getKey() {
+    if (wheelLocationMeters.getX() > 0 && wheelLocationMeters.getY() < 0) {
+      return "1FR";
+    }
+    if (wheelLocationMeters.getX() > 0 && wheelLocationMeters.getY() > 0) {
+      return "2FL";
+    }
+    if (wheelLocationMeters.getX() < 0 && wheelLocationMeters.getY() < 0) {
+      return "3RR";
+    }
+    return "4RL";
+  }
+
+  @Override
+  public String toString() {
+    return "TalonSwerveModule{" + getKey() + '}';
+  }
+
   public static class Builder {
+
     public static final int kDefaultTalonSRXCountsPerRev = 4096;
     public static final int kDefaultTalonFXCountsPerRev = 2048;
 
@@ -96,6 +130,7 @@ public class TalonSwerveModule implements SwerveModule {
     private int driveCountsPerRev = kDefaultTalonFXCountsPerRev;
     private int azimuthCountsPerRev = kDefaultTalonSRXCountsPerRev;
     private double driveMaximumMetersPerSecond;
+    private Translation2d wheelLocationMeters;
 
     public Builder(BaseTalon azimuthTalon, BaseTalon driveTalon) {
       this.azimuthTalon = Objects.requireNonNull(azimuthTalon);
@@ -127,8 +162,34 @@ public class TalonSwerveModule implements SwerveModule {
       return this;
     }
 
+    public Builder wheelLocationMeters(Translation2d locationMeters) {
+      wheelLocationMeters = locationMeters;
+      return this;
+    }
+
     public TalonSwerveModule build() {
-      return new TalonSwerveModule(this);
+      var module = new TalonSwerveModule(this);
+      validateTalonSwerveModuleObject(module);
+      return module;
+    }
+
+
+    private void validateTalonSwerveModuleObject(TalonSwerveModule module) {
+      if (module.driveGearRatio <= 0) {
+        throw new IllegalArgumentException("drive gear ratio must be greater than zero.");
+      }
+
+      if (module.wheelCircumferenceMeters <= 0) {
+        throw new IllegalArgumentException("wheel diameter must be greater than zero.");
+      }
+
+      if (module.driveMaximumMetersPerSecond <= 0) {
+        throw new IllegalArgumentException("drive maximum speed must be greater than zero.");
+      }
+
+      if (module.wheelLocationMeters == null) {
+        throw new IllegalArgumentException("wheel location must be set.");
+      }
     }
   }
 }

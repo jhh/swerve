@@ -1,9 +1,21 @@
 package org.strykeforce.swerve;
 
+import static frc.robot.Constants.Drive.kDriveGearRatio;
+import static frc.robot.Constants.Drive.kDriveMaximumMetersPerSecond;
+import static frc.robot.Constants.Drive.kWheelDiameterInches;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.SensorCollection;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,146 +25,26 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
-import static frc.robot.Constants.Drive.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-
 class TalonSwerveModuleTest {
 
-  @Nested
-  @DisplayName("Should get module state")
-  class ShouldGetModuleState {
+  @ParameterizedTest
+  @CsvSource({"0, 2767, -2767"})
+  @DisplayName("Should set azimuth zero")
+  void shouldSetAzimuthZero() {
+    TalonSRX azimuthTalon = mock(TalonSRX.class);
+    TalonFX driveTalon = mock(TalonFX.class);
+    SwerveModule module =
+        new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+            .driveGearRatio(kDriveGearRatio)
+            .wheelDiameterInches(kWheelDiameterInches)
+            .wheelLocationMeters(new Translation2d())
+            .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+            .build();
+    SensorCollection sensorCollection = mock(SensorCollection.class);
+    when(azimuthTalon.getSensorCollection()).thenReturn(sensorCollection);
 
-    private TalonSRX azimuthTalon;
-    private TalonFX driveTalon;
-    private TalonSwerveModule module;
-
-    @BeforeEach
-    void setUp() {
-      azimuthTalon = mock(TalonSRX.class);
-      driveTalon = mock(TalonFX.class);
-      module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-              .driveGearRatio(kDriveGearRatio)
-              .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
-              .build();
-    }
-
-    @Test
-    @DisplayName("drive speed with default encoder counts")
-    void speedWithDefaultEncoderCounts() {
-      when(driveTalon.getSelectedSensorVelocity()).thenReturn(20480.0);
-      SwerveModuleState state = module.getState();
-      assertEquals(3.657337448, state.speedMetersPerSecond, 1e-9);
-    }
-
-    @Test
-    @DisplayName("drive speed with encoder counts")
-    void speedWithEncoderCounts() {
-      when(driveTalon.getSelectedSensorVelocity()).thenReturn(20480.0);
-      module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-              .driveGearRatio(kDriveGearRatio)
-              .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
-              .azimuthEncoderCountsPerRevolution(4096)
-              .driveEncoderCountsPerRevolution(2048)
-              .build();
-      SwerveModuleState state = module.getState();
-      assertEquals(3.657337448, state.speedMetersPerSecond, 1e-9);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-      // azimuth encoder counts, azimuth angle
-      // cardinals
-      "0, 0",
-      "1024, 90",
-      "2048, 180",
-      "3072, -90",
-      // cardinals plus 4096
-      "4096, 0",
-      "5120, 90",
-      "6144, 180",
-      "7168, -90",
-      // negatives
-      "-0, 0",
-      "-1024, -90",
-      "-2048, -180",
-      "-3072, 90",
-      // negatives minus 4096
-      "-4096, 0",
-      "-5120, -90",
-      "-6144, -180",
-      "-7168, 90",
-      // misc
-      "11.377778, 1", // 4096/360
-      "-11.377778, -1"
-    })
-    @DisplayName("azimuth angle with default encoder counts")
-    void angleWithDefaultEncoderCounts(double counts, double expectedAngleDeg) {
-      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(counts);
-      SwerveModuleState state = module.getState();
-      var expectedRotation = Rotation2d.fromDegrees(expectedAngleDeg);
-      assertEquals(expectedRotation, state.angle);
-    }
-  }
-
-  @Nested
-  @DisplayName("Should set module state")
-  class ShouldSetModuleState {
-
-    final ArgumentCaptor<Double> captor = ArgumentCaptor.forClass(Double.class);
-    private TalonSRX azimuthTalon;
-    private TalonFX driveTalon;
-    private TalonSwerveModule module;
-
-    @BeforeEach
-    void setUp() {
-      azimuthTalon = mock(TalonSRX.class);
-      driveTalon = mock(TalonFX.class);
-      module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-              .driveGearRatio(kDriveGearRatio)
-              .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
-              .build();
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-      // drive m/s, percent output
-      "0, 0",
-      "0.304778121, 0.079365079",
-      "3.657337448, 0.9523809525",
-    })
-    @DisplayName("drive speed when open loop")
-    void driveOpenLoopSpeed(double driveMetersPerSecond, double expectedPercentOutput) {
-      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
-      var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
-      module.setOpenLoopDesiredState(desiredState);
-      verify(driveTalon).set(eq(ControlMode.PercentOutput), captor.capture());
-      assertEquals(expectedPercentOutput, captor.getValue(), 1e-9);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-      // drive m/s, encoder counts per 100ms
-      "0, 0",
-      "0.304778121, 1707",
-      "0.609556241, 3413",
-      "1.219112483, 6827",
-      "3.84020432, 21504"
-    })
-    @DisplayName("drive speed when closed loop")
-    void driveClosedLoopSpeed(double driveMetersPerSecond, double expectedCountsPer100ms) {
-      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
-      var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
-      module.setClosedLoopDesiredState(desiredState);
-      verify(driveTalon).set(eq(ControlMode.Velocity), captor.capture());
-      assertEquals(expectedCountsPer100ms, captor.getValue(), 0.5);
-    }
+//    wheel.setAzimuthZero(zero);
+//    verify(azimuthTalon).setSelectedSensorPosition(setpoint, 0, 10);
   }
 
   @Test
@@ -176,5 +68,348 @@ class TalonSwerveModuleTest {
 
     var d = Rotation2d.fromDegrees(360);
     assertEquals(Rotation2d.fromDegrees(1), d.plus(Rotation2d.fromDegrees(1)));
+
+    var revolutions = 3;
+    var e = new Rotation2d(2.0 * Math.PI * revolutions);
+    assertEquals(new Rotation2d(), e);
+    assertEquals(1080, e.getDegrees());
+    assertEquals(0, e.rotateBy(new Rotation2d()).getRadians(), 1e-9);
   }
+
+  @Nested
+  @DisplayName("Should not validate")
+  class ShouldNotValidate {
+
+    private TalonSRX azimuthTalon;
+    private TalonFX driveTalon;
+
+    @BeforeEach
+    void setUp() {
+      azimuthTalon = mock(TalonSRX.class);
+      driveTalon = mock(TalonFX.class);
+    }
+
+    @Test
+    @DisplayName("when talon is null")
+    void whenTalonIsNull() {
+      assertThrows(NullPointerException.class, () -> {
+        var builder = new TalonSwerveModule.Builder(null, driveTalon);
+      });
+      assertThrows(NullPointerException.class, () -> {
+        var builder = new TalonSwerveModule.Builder(azimuthTalon, null);
+      });
+    }
+
+    @Test
+    @DisplayName("when drive gear ratio lte zero")
+    void whenDriveGearRatioLteZero() {
+      TalonSwerveModule.Builder builder =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .wheelLocationMeters(new Translation2d())
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond);
+      assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    @DisplayName("when wheel diameter lte zero")
+    void whenWheelDiameterLteZero() {
+      TalonSwerveModule.Builder builder =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelLocationMeters(new Translation2d())
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond);
+      assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    @DisplayName("when drive maximum meters per second lte zero")
+    void whenDriveMaximumMetersPerSecondLteZero() {
+      TalonSwerveModule.Builder builder =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelLocationMeters(new Translation2d())
+              .wheelDiameterInches(kWheelDiameterInches);
+      assertThrows(IllegalArgumentException.class, builder::build);
+    }
+
+    @Test
+    @DisplayName("when wheel location not set")
+    void whenWheelLocationNotSet() {
+      TalonSwerveModule.Builder builder =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond);
+      assertThrows(IllegalArgumentException.class, builder::build);
+    }
+  }
+
+  @Nested
+  @DisplayName("Should get module state")
+  class ShouldGetModuleState {
+
+    private TalonSRX azimuthTalon;
+    private TalonFX driveTalon;
+
+    @BeforeEach
+    void setUp() {
+      azimuthTalon = mock(TalonSRX.class);
+      driveTalon = mock(TalonFX.class);
+    }
+
+    @Test
+    @DisplayName("drive speed with default encoder counts")
+    void speedWithDefaultEncoderCounts() {
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .wheelLocationMeters(new Translation2d())
+              .build();
+      when(driveTalon.getSelectedSensorVelocity()).thenReturn(20480.0);
+      SwerveModuleState state = module.getState();
+      assertEquals(3.657337448, state.speedMetersPerSecond, 1e-9);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2048, 20480, 3.657337448", "4096, 40960, 3.657337448"})
+    @DisplayName("drive speed with encoder counts")
+    void speedWithEncoderCounts(int driveEncoderCountsPerRevolution,
+        double driveSelectedSensorVelocity, double expectedMetersPerSecond) {
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .azimuthEncoderCountsPerRevolution(4096)
+              .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .wheelLocationMeters(new Translation2d())
+              .build();
+      when(driveTalon.getSelectedSensorVelocity()).thenReturn(driveSelectedSensorVelocity);
+      SwerveModuleState state = module.getState();
+      assertEquals(expectedMetersPerSecond, state.speedMetersPerSecond, 1e-9);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // azimuth counts per rev, azimuth encoder counts, azimuth angle
+        // cardinals
+        "4096, 0, 0",
+        "4096, 1024, 90",
+        "2048, 512, 90",
+        "4096, 2048, 180",
+        "2048, 1024, 180",
+        "4096, 3072, -90",
+        "2048, 1536, -90",
+        // cardinals plus 4096/2048
+        "4096, 4096, 0",
+        "2048, 2048, 0",
+        "4096, 5120, 90",
+        "2048, 2560, 90",
+        "4096, 6144, 180",
+        "2048, 3072, 180",
+        "4096, 7168, -90",
+        // negatives
+        "4096, -0, 0",
+        "2048, -0, 0",
+        "4096, -1024, -90",
+        "2048, -512, -90",
+        "4096, -2048, -180",
+        "2048, -1024, -180",
+        "4096, -3072, 90",
+        "2048, -1536, 90",
+        // negatives minus 4096/2048
+        "4096, -4096, 0",
+        "2048, -2048, 0",
+        "4096, -5120, -90",
+        "2048, -2560, -90",
+        "4096, -6144, -180",
+        "2048, -3072, -180",
+        "4096, -7168, 90",
+        "2048, -3584, 90",
+        // misc
+        "4096, 11.377778, 1", // 4096/360
+        "4096, -11.377778, -1"
+    })
+    @DisplayName("azimuth angle with encoder counts")
+    void angleWithEncoderCounts(int azimuthEncoderCountsPerRevolution,
+        double azimuthSelectedSensorPosition, double expectedAngleDeg) {
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .wheelLocationMeters(new Translation2d())
+              .build();
+      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(azimuthSelectedSensorPosition);
+      SwerveModuleState state = module.getState();
+      var expectedRotation = Rotation2d.fromDegrees(expectedAngleDeg);
+      assertEquals(expectedRotation, state.angle);
+    }
+  }
+
+  @Nested
+  @DisplayName("Should set module state")
+  class ShouldSetModuleState {
+
+    final ArgumentCaptor<Double> captor = ArgumentCaptor.forClass(Double.class);
+    private TalonSRX azimuthTalon;
+    private TalonFX driveTalon;
+
+    @BeforeEach
+    void setUp() {
+      azimuthTalon = mock(TalonSRX.class);
+      driveTalon = mock(TalonFX.class);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // drive counts per rev, drive m/s, percent output
+        "2048, 0, 0",
+        "2048, 0.304778121, 0.079365079",
+        "2048, 3.657337448, 0.9523809525",
+        "4096, 0, 0",
+        "4096, 0.304778121, 0.079365079",
+        "4096, 3.657337448, 0.9523809525",
+    })
+    @DisplayName("drive speed when open loop")
+    void driveOpenLoopSpeed(int driveEncoderCountsPerRevolution, double driveMetersPerSecond,
+        double expectedPercentOutput) {
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .wheelLocationMeters(new Translation2d())
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .build();
+      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
+      var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
+      module.setOpenLoopDesiredState(desiredState);
+      verify(driveTalon).set(eq(ControlMode.PercentOutput), captor.capture());
+      assertEquals(expectedPercentOutput, captor.getValue(), 1e-9);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // drive counts per rev, drive m/s, encoder counts per 100ms
+        "2048, 0, 0",
+        "2048, 0.304778121, 1707",
+        "2048, 0.609556241, 3413",
+        "2048, 1.219112483, 6827",
+        "2048, 3.84020432, 21504",
+        "4096, 0, 0",
+        "4096, 0.304778121, 3414",
+        "4096, 0.609556241, 6826",
+        "4096, 1.219112483, 13654",
+        "4096, 3.84020432, 43008",
+    })
+    @DisplayName("drive speed when closed loop")
+    void driveClosedLoopSpeed(int driveEncoderCountsPerRevolution, double driveMetersPerSecond,
+        double expectedCountsPer100ms) {
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .wheelLocationMeters(new Translation2d())
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .build();
+
+      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
+      var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
+      module.setClosedLoopDesiredState(desiredState);
+      verify(driveTalon).set(eq(ControlMode.Velocity), captor.capture());
+      assertEquals(expectedCountsPer100ms, captor.getValue(), 0.75);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // drive counts per rev, encoder counts before, azimuth angle, encoder counts after, drive reversed
+        "4096, 0, 0, 0, false",
+        "4096, 0, 10, 114, false",
+        "4096, 0, -10, -114, false",
+        "4096, 0, 90, 1024, false",
+        "4096, 0, -90, -1024, false",
+        "4096, 0, 135, -512, true",
+        "4096, 0, -135, 512, true",
+        "4096, 1024, 180, 2048, false",
+        "4096, 1024, -180, 0, true",
+        "4096, -1024, -180, -2048, false",
+        "4096, -1024, 180, 0, true",
+        "4096, 2048, 180, 2048, false",
+        "4096, 2048, -180, 2048, false",
+        "4096, -2048, -180, -2048, false",
+        "4096, -2048, 180, -2048, false",
+        "2048, 0, 0, 0, false",
+        "2048, 0, 10, 57, false",
+        "2048, 0, -10, -57, false",
+        "2048, 0, 90, 512, false",
+        "2048, 0, -90, -512, false",
+        "2048, 0, 135, -256, true",
+        "2048, 0, -135, 256, true",
+        "2048, 1024, 180, 1024, false",
+        "2048, 1024, -180, 1024, false",
+        "2048, -1024, -180, -1024, false",
+        "2048, -1024, 180, -1024, false",
+        "2048, 2048, 180, 2048, true",
+        "2048, 2048, -180, 2048, true",
+        "2048, -2048, -180, -2048, true",
+        "2048, -2048, 180, -2048, true",
+        // encoder wound up
+        // 12288=0 (3 revs), 13312=90, 11264=-90
+        "4096, 12288, 0, 12288, false",
+        "4096, 12289, 90, 13312, false",
+        "4096, 12287, 90, 11264, true",
+        "4096, 12288, 90, 11264, true",
+        "2048, 12288, 0, 12288, false",
+        "2048, 12289, 90, 12800, false",
+        "2048, 12287, 90, 11776, true",
+        "2048, 12288, 90, 11776, true",
+        // 13369=95, 14336=180, 14393=185, 12356=6
+        "4096, 13369, 95, 13369, false",
+        "4096, 14336, 180, 14336, false",
+        "4096, 14336, -180, 14336, false",
+        "4096, 13369, 180, 14336, false",
+        "4096, 13369, 185, 14393, false",
+        "4096, 13369, 186, 12356, true",
+        "2048, 13369, 95, 13852, true",
+        "2048, 14336, 180, 14336, true",
+        "2048, 14336, -180, 14336, true",
+        "2048, 13369, 180, 13312, false",
+        "2048, 13369, 185, 13340, false",
+        "2048, 13369, 186, 13346, false",
+    })
+    @DisplayName("azimuth angle  when open loop")
+    void azimuthAngleWhenOpenLoop(int azimuthEncoderCountsPerRevolution, double countsBefore,
+        double angleDegrees, double countsExpected,
+        boolean reversed) {
+      var speedMetersPerSecond = 3.657337448;
+      var drivePercentOutput = 0.9523809525;
+
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .wheelLocationMeters(new Translation2d())
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .build();
+
+      var desiredState = new SwerveModuleState(speedMetersPerSecond,
+          Rotation2d.fromDegrees(angleDegrees));
+
+      when(azimuthTalon.getSelectedSensorPosition()).thenReturn(countsBefore);
+
+      module.setOpenLoopDesiredState(desiredState);
+      verify(azimuthTalon).set(eq(ControlMode.MotionMagic), captor.capture());
+      assertEquals(countsExpected, captor.getValue(), 0.5);
+      verify(driveTalon).set(eq(ControlMode.PercentOutput), captor.capture());
+      assertEquals(reversed ? -drivePercentOutput : drivePercentOutput, captor.getValue(), 1e-6);
+    }
+  }
+
 }
