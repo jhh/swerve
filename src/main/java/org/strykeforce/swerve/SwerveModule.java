@@ -26,9 +26,15 @@ public interface SwerveModule {
   void setClosedLoopDesiredState(SwerveModuleState desiredState);
 
   /**
-   * Save the current azimuth absolute encoder position in NetworkTables preferences. Call this
+   * Save the current azimuth absolute encoder reference position in NetworkTables preferences. Call this
    * method following physical alignment of the module wheel in its zeroed position. Used during
    * module instantiation to initialize the relative encoder.
    */
   void storeAzimuthZeroReference();
+
+  /**
+   * Loads the current azimuth absolute encoder reference position and sets selected sensor
+   * encoder.
+   */
+  void loadAzimuthZeroReference();
 }

@@ -4,11 +4,18 @@
 
 package frc.robot;
 
+import static frc.robot.Constants.Drive.kDriveGearRatio;
+import static frc.robot.Constants.Drive.kDriveMaximumMetersPerSecond;
+import static frc.robot.Constants.Drive.kLeftFrontWheelLocation;
+import static frc.robot.Constants.Drive.kWheelDiameterInches;
+
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.strykeforce.swerve.TalonSwerveModule;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -17,11 +24,11 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  * project.
  */
 public class Robot extends TimedRobot {
+
   private Command m_autonomousCommand;
 
   private RobotContainer m_robotContainer;
-
-  private WPI_TalonSRX driveTalon = new WPI_TalonSRX(0);
+  private TalonSwerveModule swerveModule;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -32,7 +39,14 @@ public class Robot extends TimedRobot {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
-    driveTalon.setName("Drive 0");
+    swerveModule = new TalonSwerveModule.Builder(new TalonSRX(0),
+        new TalonSRX(10))
+        .driveGearRatio(kDriveGearRatio)
+        .wheelDiameterInches(kWheelDiameterInches)
+        .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+        .wheelLocationMeters(kLeftFrontWheelLocation)
+        .build();
+    swerveModule.loadAzimuthZeroReference();
   }
 
   /**
@@ -51,14 +65,20 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
   }
 
-  /** This function is called once each time the robot enters Disabled mode. */
+  /**
+   * This function is called once each time the robot enters Disabled mode.
+   */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+  }
 
   @Override
-  public void disabledPeriodic() {}
+  public void disabledPeriodic() {
+  }
 
-  /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
+  /**
+   * This autonomous runs the autonomous command selected by your {@link RobotContainer} class.
+   */
   @Override
   public void autonomousInit() {
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -69,9 +89,12 @@ public class Robot extends TimedRobot {
     }
   }
 
-  /** This function is called periodically during autonomous. */
+  /**
+   * This function is called periodically during autonomous.
+   */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+  }
 
   @Override
   public void teleopInit() {
@@ -82,11 +105,17 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+
+    SwerveModuleState desiredState = new SwerveModuleState(1, Rotation2d.fromDegrees(135));
+    swerveModule.setOpenLoopDesiredState(desiredState);
   }
 
-  /** This function is called periodically during operator control. */
+  /**
+   * This function is called periodically during operator control.
+   */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+  }
 
   @Override
   public void testInit() {
@@ -94,7 +123,10 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().cancelAll();
   }
 
-  /** This function is called periodically during test mode. */
+  /**
+   * This function is called periodically during test mode.
+   */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+  }
 }

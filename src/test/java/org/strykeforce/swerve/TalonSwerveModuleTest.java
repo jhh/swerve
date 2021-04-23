@@ -180,7 +180,7 @@ class TalonSwerveModuleTest {
         double driveSelectedSensorVelocity, double expectedMetersPerSecond) {
       TalonSwerveModule module =
           new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-              .azimuthEncoderCountsPerRevolution(4096)
+//              .azimuthEncoderCountsPerRevolution(4096)
               .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
@@ -236,9 +236,14 @@ class TalonSwerveModuleTest {
     @DisplayName("azimuth angle with encoder counts")
     void angleWithEncoderCounts(int azimuthEncoderCountsPerRevolution,
         double azimuthSelectedSensorPosition, double expectedAngleDeg) {
+      // we currently only support TalonSRX for azimuth
+      if (azimuthEncoderCountsPerRevolution == 2048) {
+        return;
+      }
+
       TalonSwerveModule module =
           new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
+//              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
               .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
@@ -387,12 +392,17 @@ class TalonSwerveModuleTest {
     void azimuthAngleWhenOpenLoop(int azimuthEncoderCountsPerRevolution, double countsBefore,
         double angleDegrees, double countsExpected,
         boolean reversed) {
+      // we currently only support TalonSRX for azimuth
+      if (azimuthEncoderCountsPerRevolution == 2048) {
+        return;
+      }
+
       var speedMetersPerSecond = 3.657337448;
       var drivePercentOutput = 0.9523809525;
 
       TalonSwerveModule module =
           new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
+//              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
               .wheelLocationMeters(new Translation2d())

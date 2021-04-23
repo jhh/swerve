@@ -1,18 +1,27 @@
 package org.strykeforce.swerve;
 
+import static com.ctre.phoenix.motorcontrol.ControlMode.MotionMagic;
+
+import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.BaseTalon;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.util.Units;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TalonSwerveModule implements SwerveModule {
 
+  private static final Logger logger = LoggerFactory.getLogger(TalonSwerveModule.class);
+
   final int k100msPerSecond = 10;
 
-  private final BaseTalon azimuthTalon;
+  private final TalonSRX azimuthTalon;
   private final BaseTalon driveTalon;
   private final double azimuthCountsPerRev;
   private final double driveCountsPerRev;
@@ -31,6 +40,7 @@ public class TalonSwerveModule implements SwerveModule {
     driveMaximumMetersPerSecond = builder.driveMaximumMetersPerSecond;
     wheelLocationMeters = builder.wheelLocationMeters;
   }
+
 
   @Override
   public Translation2d getWheelLocationMeters() {
@@ -62,8 +72,34 @@ public class TalonSwerveModule implements SwerveModule {
 
   @Override
   public void storeAzimuthZeroReference() {
-    String preferenceKey = getKey();
-//    azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF;
+    int index = getWheelIndex();
+    int position = getAzimuthAbsoluteEncoderCounts();
+    Preferences preferences = Preferences.getInstance();
+    String key = String.format("SwerveDrive/wheel.%d", index);
+    preferences.putInt(key, position);
+    logger.info("azimuth {}: saved zero = {}", index, position);
+  }
+
+  public void loadAzimuthZeroReference() {
+    int index = getWheelIndex();
+    Preferences preferences = Preferences.getInstance();
+    String key = String.format("SwerveDrive/wheel.%d", index);
+    int reference = preferences.getInt(key, Integer.MIN_VALUE);
+    if (reference == Integer.MIN_VALUE) {
+      logger.error("no saved azimuth zero reference for swerve module {}", index);
+    }
+    int azimuthSetpoint = getAzimuthAbsoluteEncoderCounts() - reference;
+    ErrorCode err = azimuthTalon.setSelectedSensorPosition(azimuthSetpoint, 0, 10);
+    if (err.value != 0) {
+      logger.warn("Talon error code while setting azimuth zero: {}", err);
+    }
+    azimuthTalon.set(MotionMagic, azimuthSetpoint);
+    logger.info("swerve module {}: loaded azimuth zero reference = {}", index, reference);
+  }
+
+
+  private int getAzimuthAbsoluteEncoderCounts() {
+    return azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF;
   }
 
 
@@ -77,7 +113,7 @@ public class TalonSwerveModule implements SwerveModule {
     double countsBefore = azimuthTalon.getSelectedSensorPosition();
     double countsFromAngle = angle.getRadians() / (2.0 * Math.PI) * azimuthCountsPerRev;
     double countsDelta = Math.IEEEremainder(countsFromAngle - countsBefore, azimuthCountsPerRev);
-    azimuthTalon.set(ControlMode.MotionMagic, countsBefore + countsDelta);
+    azimuthTalon.set(MotionMagic, countsBefore + countsDelta);
   }
 
   private double getDriveMetersPerSecond() {
@@ -99,22 +135,22 @@ public class TalonSwerveModule implements SwerveModule {
     driveTalon.set(ControlMode.Velocity, encoderCountsPerSecond / k100msPerSecond);
   }
 
-  private String getKey() {
-    if (wheelLocationMeters.getX() > 0 && wheelLocationMeters.getY() < 0) {
-      return "1FR";
-    }
+  private int getWheelIndex() {
     if (wheelLocationMeters.getX() > 0 && wheelLocationMeters.getY() > 0) {
-      return "2FL";
+      return 0;
     }
-    if (wheelLocationMeters.getX() < 0 && wheelLocationMeters.getY() < 0) {
-      return "3RR";
+    if (wheelLocationMeters.getX() > 0 && wheelLocationMeters.getY() < 0) {
+      return 1;
     }
-    return "4RL";
+    if (wheelLocationMeters.getX() < 0 && wheelLocationMeters.getY() > 0) {
+      return 2;
+    }
+    return 3;
   }
 
   @Override
   public String toString() {
-    return "TalonSwerveModule{" + getKey() + '}';
+    return "TalonSwerveModule{" + getWheelIndex() + '}';
   }
 
   public static class Builder {
@@ -122,17 +158,16 @@ public class TalonSwerveModule implements SwerveModule {
     public static final int kDefaultTalonSRXCountsPerRev = 4096;
     public static final int kDefaultTalonFXCountsPerRev = 2048;
 
-    private final BaseTalon azimuthTalon;
+    private final TalonSRX azimuthTalon;
     private final BaseTalon driveTalon;
-
+    private final int azimuthCountsPerRev = kDefaultTalonSRXCountsPerRev;
     private double driveGearRatio;
     private double wheelDiameterInches;
     private int driveCountsPerRev = kDefaultTalonFXCountsPerRev;
-    private int azimuthCountsPerRev = kDefaultTalonSRXCountsPerRev;
     private double driveMaximumMetersPerSecond;
     private Translation2d wheelLocationMeters;
 
-    public Builder(BaseTalon azimuthTalon, BaseTalon driveTalon) {
+    public Builder(TalonSRX azimuthTalon, BaseTalon driveTalon) {
       this.azimuthTalon = Objects.requireNonNull(azimuthTalon);
       this.driveTalon = Objects.requireNonNull(driveTalon);
     }
@@ -152,10 +187,11 @@ public class TalonSwerveModule implements SwerveModule {
       return this;
     }
 
-    public Builder azimuthEncoderCountsPerRevolution(int countsPerRev) {
-      azimuthCountsPerRev = countsPerRev;
-      return this;
-    }
+    // we currently only support TalonSRX for azimuth
+//    public Builder azimuthEncoderCountsPerRevolution(int countsPerRev) {
+//      azimuthCountsPerRev = countsPerRev;
+//      return this;
+//    }
 
     public Builder driveMaximumMetersPerSecond(double metersPerSecond) {
       driveMaximumMetersPerSecond = metersPerSecond;
@@ -177,6 +213,16 @@ public class TalonSwerveModule implements SwerveModule {
     private void validateTalonSwerveModuleObject(TalonSwerveModule module) {
       if (module.driveGearRatio <= 0) {
         throw new IllegalArgumentException("drive gear ratio must be greater than zero.");
+      }
+
+      if (module.azimuthCountsPerRev <= 0) {
+        throw new IllegalArgumentException(
+            "azimuth encoder counts per revolution must be greater than zero.");
+      }
+
+      if (module.driveCountsPerRev <= 0) {
+        throw new IllegalArgumentException(
+            "drive encoder counts per revolution must be greater than zero.");
       }
 
       if (module.wheelCircumferenceMeters <= 0) {
