@@ -5,18 +5,25 @@ import static frc.robot.Constants.Drive.kDriveMaximumMetersPerSecond;
 import static frc.robot.Constants.Drive.kWheelDiameterInches;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.SensorCollection;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,54 +34,105 @@ import org.mockito.ArgumentCaptor;
 
 class TalonSwerveModuleTest {
 
-  @ParameterizedTest
-  @CsvSource({"0, 2767, -2767"})
-  @DisplayName("Should set azimuth zero")
-  void shouldSetAzimuthZero() {
-    TalonSRX azimuthTalon = mock(TalonSRX.class);
-    TalonFX driveTalon = mock(TalonFX.class);
-    SwerveModule module =
-        new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
-            .driveGearRatio(kDriveGearRatio)
-            .wheelDiameterInches(kWheelDiameterInches)
-            .wheelLocationMeters(new Translation2d())
-            .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
-            .build();
-    SensorCollection sensorCollection = mock(SensorCollection.class);
-    when(azimuthTalon.getSensorCollection()).thenReturn(sensorCollection);
+  private static final NetworkTableInstance nti = NetworkTableInstance.create();
 
-//    wheel.setAzimuthZero(zero);
-//    verify(azimuthTalon).setSelectedSensorPosition(setpoint, 0, 10);
+  @BeforeAll
+  static void beforeAll() {
+    nti.startLocal();
   }
 
-  @Test
-  @DisplayName("Rotation2d should work as expected")
-  void rotation2DShouldWorkAsExpected() {
-    assertEquals(Rotation2d.fromDegrees(180), Rotation2d.fromDegrees(-180));
-
-    var a = Rotation2d.fromDegrees(175);
-    var b = Rotation2d.fromDegrees(10);
-
-    assertEquals(Rotation2d.fromDegrees(165), a.minus(b));
-    assertEquals(Rotation2d.fromDegrees(185), a.plus(b));
-    assertEquals(Rotation2d.fromDegrees(-175), a.plus(b));
-    assertEquals(-175.0, a.plus(b).getDegrees());
-
-    var c = new Rotation2d(Math.PI);
-    assertEquals(Rotation2d.fromDegrees(-175), a.rotateBy(b));
-    assertEquals(Rotation2d.fromDegrees(-5), a.rotateBy(c));
-
-    assertEquals(Rotation2d.fromDegrees(-175), a.unaryMinus());
-
-    var d = Rotation2d.fromDegrees(360);
-    assertEquals(Rotation2d.fromDegrees(1), d.plus(Rotation2d.fromDegrees(1)));
-
-    var revolutions = 3;
-    var e = new Rotation2d(2.0 * Math.PI * revolutions);
-    assertEquals(new Rotation2d(), e);
-    assertEquals(1080, e.getDegrees());
-    assertEquals(0, e.rotateBy(new Rotation2d()).getRadians(), 1e-9);
+  @AfterAll
+  static void afterAll() {
+    nti.stopLocal();
+    nti.close();
   }
+
+  @Nested
+  @DisplayName("When setting azimuth zero")
+  class WhenSettingAzimuthZero {
+
+    TalonSRX azimuthTalon;
+    TalonFX driveTalon;
+    SwerveModule module;
+    SensorCollection sensorCollection;
+
+    @BeforeEach
+    void setUp() {
+      azimuthTalon = mock(TalonSRX.class);
+      driveTalon = mock(TalonFX.class);
+      module =
+          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .wheelLocationMeters(new Translation2d(1, 1))
+              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .build();
+      sensorCollection = mock(SensorCollection.class);
+      when(azimuthTalon.getSensorCollection()).thenReturn(sensorCollection);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0, 0, 0", "4096, 0, 0", "4097, 1, 0", "4097, 0, 1", "0, 2767, -2767"})
+    @DisplayName("should set azimuth zero")
+    void shouldSetAzimuthZero(int absoluteEncoderPosition, int zeroReference, double setpoint) {
+      int index = 0; // fixture wheel is LF
+      String key = String.format("SwerveDrive/wheel.%d", index);
+      Preferences preferences = Preferences.getInstance();
+      preferences.putInt(key, zeroReference);
+      when(sensorCollection.getPulseWidthPosition()).thenReturn(absoluteEncoderPosition);
+      when(azimuthTalon.setSelectedSensorPosition(eq(setpoint), anyInt(), anyInt()))
+          .thenReturn(ErrorCode.valueOf(0));
+      module.loadAndSetAzimuthZeroReference();
+      verify(azimuthTalon).setSelectedSensorPosition(setpoint, 0, 10);
+    }
+
+    @Test
+    @DisplayName("should throw exception if no NetworkTables reference")
+    void shouldThrowExceptionIfNoNetworkTablesReference() {
+      int index = 0; // fixture wheel is LF
+      String key = String.format("SwerveDrive/wheel.%d", index);
+      Preferences preferences = Preferences.getInstance();
+      preferences.remove(key);
+      int reference = preferences.getInt(key, Integer.MIN_VALUE);
+      assertEquals(Integer.MIN_VALUE, reference);
+
+      when(sensorCollection.getPulseWidthPosition()).thenReturn(0);
+      when(azimuthTalon.setSelectedSensorPosition(anyDouble(), anyInt(), anyInt()))
+          .thenReturn(ErrorCode.valueOf(0));
+      assertThrows(IllegalStateException.class, module::loadAndSetAzimuthZeroReference);
+    }
+  }
+
+  /*
+    @Test
+    @DisplayName("Rotation2d should work as expected")
+    void rotation2DShouldWorkAsExpected() {
+      assertEquals(Rotation2d.fromDegrees(180), Rotation2d.fromDegrees(-180));
+
+      var a = Rotation2d.fromDegrees(175);
+      var b = Rotation2d.fromDegrees(10);
+
+      assertEquals(Rotation2d.fromDegrees(165), a.minus(b));
+      assertEquals(Rotation2d.fromDegrees(185), a.plus(b));
+      assertEquals(Rotation2d.fromDegrees(-175), a.plus(b));
+      assertEquals(-175.0, a.plus(b).getDegrees());
+
+      var c = new Rotation2d(Math.PI);
+      assertEquals(Rotation2d.fromDegrees(-175), a.rotateBy(b));
+      assertEquals(Rotation2d.fromDegrees(-5), a.rotateBy(c));
+
+      assertEquals(Rotation2d.fromDegrees(-175), a.unaryMinus());
+
+      var d = Rotation2d.fromDegrees(360);
+      assertEquals(Rotation2d.fromDegrees(1), d.plus(Rotation2d.fromDegrees(1)));
+
+      var revolutions = 3;
+      var e = new Rotation2d(2.0 * Math.PI * revolutions);
+      assertEquals(new Rotation2d(), e);
+      assertEquals(1080, e.getDegrees());
+      assertEquals(0, e.rotateBy(new Rotation2d()).getRadians(), 1e-9);
+    }
+  */
 
   @Nested
   @DisplayName("Should not validate")
@@ -293,7 +351,7 @@ class TalonSwerveModuleTest {
               .build();
       when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
       var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
-      module.setOpenLoopDesiredState(desiredState);
+      module.setDesiredState(desiredState, true);
       verify(driveTalon).set(eq(ControlMode.PercentOutput), captor.capture());
       assertEquals(expectedPercentOutput, captor.getValue(), 1e-9);
     }
@@ -326,7 +384,7 @@ class TalonSwerveModuleTest {
 
       when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
       var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
-      module.setClosedLoopDesiredState(desiredState);
+      module.setDesiredState(desiredState, false);
       verify(driveTalon).set(eq(ControlMode.Velocity), captor.capture());
       assertEquals(expectedCountsPer100ms, captor.getValue(), 0.75);
     }
@@ -414,7 +472,7 @@ class TalonSwerveModuleTest {
 
       when(azimuthTalon.getSelectedSensorPosition()).thenReturn(countsBefore);
 
-      module.setOpenLoopDesiredState(desiredState);
+      module.setDesiredState(desiredState, true);
       verify(azimuthTalon).set(eq(ControlMode.MotionMagic), captor.capture());
       assertEquals(countsExpected, captor.getValue(), 0.5);
       verify(driveTalon).set(eq(ControlMode.PercentOutput), captor.capture());

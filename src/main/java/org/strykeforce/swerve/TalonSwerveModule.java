@@ -55,19 +55,15 @@ public class TalonSwerveModule implements SwerveModule {
   }
 
   @Override
-  public void setOpenLoopDesiredState(SwerveModuleState desiredState) {
+  public void setDesiredState(SwerveModuleState desiredState, boolean isDriveOpenLoop) {
     Rotation2d currentAngle = getAzimuthRotation2d();
     SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, currentAngle);
     setAzimuthRotation2d(optimizedState.angle);
-    setDriveOpenLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
-  }
-
-  @Override
-  public void setClosedLoopDesiredState(SwerveModuleState desiredState) {
-    Rotation2d currentAngle = getAzimuthRotation2d();
-    SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, currentAngle);
-    setAzimuthRotation2d(optimizedState.angle);
-    setDriveClosedLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
+    if (isDriveOpenLoop) {
+      setDriveOpenLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
+    } else {
+      setDriveClosedLoopMetersPerSecond(optimizedState.speedMetersPerSecond);
+    }
   }
 
   @Override
@@ -80,21 +76,30 @@ public class TalonSwerveModule implements SwerveModule {
     logger.info("azimuth {}: saved zero = {}", index, position);
   }
 
-  public void loadAzimuthZeroReference() {
+  @Override
+  public void loadAndSetAzimuthZeroReference() {
     int index = getWheelIndex();
     Preferences preferences = Preferences.getInstance();
     String key = String.format("SwerveDrive/wheel.%d", index);
     int reference = preferences.getInt(key, Integer.MIN_VALUE);
     if (reference == Integer.MIN_VALUE) {
       logger.error("no saved azimuth zero reference for swerve module {}", index);
+      throw new IllegalStateException();
     }
-    int azimuthSetpoint = getAzimuthAbsoluteEncoderCounts() - reference;
+    logger.info("swerve module {}: loaded azimuth zero reference = {}", index, reference);
+
+    int azimuthAbsoluteCounts = getAzimuthAbsoluteEncoderCounts();
+    logger.info("swerve module {}: azimuth absolute position = {}", index, azimuthAbsoluteCounts);
+
+
+    int azimuthSetpoint = azimuthAbsoluteCounts - reference;
     ErrorCode err = azimuthTalon.setSelectedSensorPosition(azimuthSetpoint, 0, 10);
     if (err.value != 0) {
       logger.warn("Talon error code while setting azimuth zero: {}", err);
     }
+
     azimuthTalon.set(MotionMagic, azimuthSetpoint);
-    logger.info("swerve module {}: loaded azimuth zero reference = {}", index, reference);
+    logger.info("swerve module {}: set azimuth encoder = {}", index, azimuthSetpoint);
   }
 
 

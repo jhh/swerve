@@ -46,7 +46,7 @@ public class Robot extends TimedRobot {
         .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
         .wheelLocationMeters(kLeftFrontWheelLocation)
         .build();
-    swerveModule.loadAzimuthZeroReference();
+    swerveModule.loadAndSetAzimuthZeroReference();
   }
 
   /**
@@ -107,7 +107,7 @@ public class Robot extends TimedRobot {
     }
 
     SwerveModuleState desiredState = new SwerveModuleState(1, Rotation2d.fromDegrees(135));
-    swerveModule.setOpenLoopDesiredState(desiredState);
+    swerveModule.setDesiredState(desiredState, true);
   }
 
   /**

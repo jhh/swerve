@@ -4,6 +4,10 @@
 
 package frc.robot;
 
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.VelocityMeasPeriod;
+import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
+import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 
 /**
@@ -37,5 +41,41 @@ public final class Constants {
         -kWheelOffsetMeters, kWheelOffsetMeters);
     public static final Translation2d kRightRearWheelLocation = new Translation2d(
         -kWheelOffsetMeters, -kWheelOffsetMeters);
+
+    public final static TalonSRXConfiguration kAzimuthTalonConfiguration = new TalonSRXConfiguration();
+    public final static TalonFXConfiguration kDriveTalonConfiguration = new TalonFXConfiguration();
+
+    static {
+      kAzimuthTalonConfiguration.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;
+      kAzimuthTalonConfiguration.continuousCurrentLimit = 10;
+      kAzimuthTalonConfiguration.peakCurrentDuration = 0;
+      kAzimuthTalonConfiguration.peakCurrentLimit = 0;
+      kAzimuthTalonConfiguration.slot0.kP = 10.0;
+      kAzimuthTalonConfiguration.slot0.kI = 0.0;
+      kAzimuthTalonConfiguration.slot0.kD = 100.0;
+      kAzimuthTalonConfiguration.slot0.kF = 0.0;
+      kAzimuthTalonConfiguration.slot0.integralZone = 0;
+      kAzimuthTalonConfiguration.slot0.allowableClosedloopError = 0;
+      kAzimuthTalonConfiguration.motionAcceleration = 10_000;
+      kAzimuthTalonConfiguration.motionCruiseVelocity = 800;
+      kAzimuthTalonConfiguration.velocityMeasurementWindow = 64;
+      kAzimuthTalonConfiguration.voltageCompSaturation = 12;
+
+      kDriveTalonConfiguration.supplyCurrLimit.currentLimit = 0.04;
+      kDriveTalonConfiguration.supplyCurrLimit.triggerThresholdCurrent = 45;
+      kDriveTalonConfiguration.supplyCurrLimit.triggerThresholdTime = 40;
+      kDriveTalonConfiguration.supplyCurrLimit.enable = true;
+      kDriveTalonConfiguration.slot0.kP = 0.045;
+      kDriveTalonConfiguration.slot0.kI = 0.0005;
+      kDriveTalonConfiguration.slot0.kD = 0.000;
+      kDriveTalonConfiguration.slot0.kF = 0.047;
+      kDriveTalonConfiguration.slot0.integralZone = 500;
+      kDriveTalonConfiguration.slot0.maxIntegralAccumulator = 75_000;
+      kDriveTalonConfiguration.slot0.allowableClosedloopError = 0;
+      kDriveTalonConfiguration.velocityMeasurementPeriod = VelocityMeasPeriod.Period_100Ms;
+      kDriveTalonConfiguration.velocityMeasurementWindow = 64;
+      kDriveTalonConfiguration.voltageCompSaturation = 12;
+    }
+
   }
 }
