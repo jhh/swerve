@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +42,7 @@ class SwerveDriveTest {
   @CsvFileSource(resources = "/swerve_test_cases.csv", numLinesToSkip = 1)
   @DisplayName("Should produce correct swerve module states")
   void shouldProduceCorrectSwerveModuleStates(double vxMetersPerSecond, double vyMetersPerSecond,
-      double omegaRadiansPerSecond, boolean isFieldOriented, double lfAngle, double lfSpeed,
+      double omegaRadiansPerSecond, boolean isFieldOriented, double gyroAngle, double lfAngle, double lfSpeed,
       double rfAngle, double rfSpeed, double lrAngle, double lrSpeed, double rrAngle,
       double rrSpeed) {
 
@@ -54,6 +55,7 @@ class SwerveDriveTest {
     }
 
     Gyro gyro = mock(Gyro.class);
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(gyroAngle));
     SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
 
     swerveDrive.drive(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, isFieldOriented);
