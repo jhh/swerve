@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.util.Units;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +40,10 @@ public class TalonSwerveModule implements SwerveModule {
     wheelLocationMeters = builder.wheelLocationMeters;
   }
 
+  @Override
+  public double getMaxSpeedMetersPerSecond() {
+    return driveMaximumMetersPerSecond;
+  }
 
   @Override
   public Translation2d getWheelLocationMeters() {
@@ -90,7 +93,6 @@ public class TalonSwerveModule implements SwerveModule {
 
     int azimuthAbsoluteCounts = getAzimuthAbsoluteEncoderCounts();
     logger.info("swerve module {}: azimuth absolute position = {}", index, azimuthAbsoluteCounts);
-
 
     int azimuthSetpoint = azimuthAbsoluteCounts - reference;
     ErrorCode err = azimuthTalon.setSelectedSensorPosition(azimuthSetpoint, 0, 10);
@@ -162,19 +164,26 @@ public class TalonSwerveModule implements SwerveModule {
 
     public static final int kDefaultTalonSRXCountsPerRev = 4096;
     public static final int kDefaultTalonFXCountsPerRev = 2048;
-
-    private final TalonSRX azimuthTalon;
-    private final BaseTalon driveTalon;
     private final int azimuthCountsPerRev = kDefaultTalonSRXCountsPerRev;
+    private TalonSRX azimuthTalon;
+    private BaseTalon driveTalon;
     private double driveGearRatio;
     private double wheelDiameterInches;
     private int driveCountsPerRev = kDefaultTalonFXCountsPerRev;
     private double driveMaximumMetersPerSecond;
     private Translation2d wheelLocationMeters;
 
-    public Builder(TalonSRX azimuthTalon, BaseTalon driveTalon) {
-      this.azimuthTalon = Objects.requireNonNull(azimuthTalon);
-      this.driveTalon = Objects.requireNonNull(driveTalon);
+    public Builder() {
+    }
+
+    public Builder azimuthTalon(TalonSRX azimuthTalon) {
+      this.azimuthTalon = azimuthTalon;
+      return this;
+    }
+
+    public Builder driveTalon(BaseTalon driveTalon) {
+      this.driveTalon = driveTalon;
+      return this;
     }
 
     public Builder driveGearRatio(double ratio) {
@@ -216,6 +225,14 @@ public class TalonSwerveModule implements SwerveModule {
 
 
     private void validateTalonSwerveModuleObject(TalonSwerveModule module) {
+      if (module.azimuthTalon == null) {
+        throw new IllegalArgumentException("azimuth talon must be set.");
+      }
+
+      if (module.driveTalon == null) {
+        throw new IllegalArgumentException("drive talon must be set.");
+      }
+
       if (module.driveGearRatio <= 0) {
         throw new IllegalArgumentException("drive gear ratio must be greater than zero.");
       }

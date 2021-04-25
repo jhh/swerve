@@ -6,6 +6,11 @@ import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 public interface SwerveModule {
 
   /**
+   * Gets the maximum attainable speed of the drive.
+   */
+  double getMaxSpeedMetersPerSecond();
+
+  /**
    * Provides the wheel location as Translation2d.
    */
   Translation2d getWheelLocationMeters();

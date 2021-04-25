@@ -30,20 +30,20 @@ public final class Constants {
         (kDriveMotorOutputGear / kDriveInputGear) * (kBevelInputGear / kBevelOutputGear);
 
     public static final double kWheelDiameterInches = 3;
-    public static final double kDriveMaximumMetersPerSecond = 3.84020432; // 6300 rpm
+    public static final double kMaxSpeedMetersPerSecond = 3.84020432; // 6300 rpm
 
-    private final static double kWheelOffsetMeters = 0.27305;
-    public static final Translation2d kLeftFrontWheelLocation = new Translation2d(
-        kWheelOffsetMeters, kWheelOffsetMeters);
-    public static final Translation2d kRightFrontWheelLocation = new Translation2d(
-        kWheelOffsetMeters, -kWheelOffsetMeters);
-    public static final Translation2d kLeftRearWheelLocation = new Translation2d(
-        -kWheelOffsetMeters, kWheelOffsetMeters);
-    public static final Translation2d kRightRearWheelLocation = new Translation2d(
-        -kWheelOffsetMeters, -kWheelOffsetMeters);
+    public final static Translation2d[] kWheelLocations = new Translation2d[4];
 
     public final static TalonSRXConfiguration kAzimuthTalonConfiguration = new TalonSRXConfiguration();
     public final static TalonFXConfiguration kDriveTalonConfiguration = new TalonFXConfiguration();
+
+    static {
+      final double offset = 0.27305;
+      kWheelLocations[0] = new Translation2d(offset, offset); // left front
+      kWheelLocations[1] = new Translation2d(offset, -offset); // right front
+      kWheelLocations[2] = new Translation2d(-offset, offset); // left rear
+      kWheelLocations[3] = new Translation2d(-offset, -offset); // right rear
+    }
 
     static {
       kAzimuthTalonConfiguration.primaryPID.selectedFeedbackSensor = FeedbackDevice.CTRE_MagEncoder_Relative;

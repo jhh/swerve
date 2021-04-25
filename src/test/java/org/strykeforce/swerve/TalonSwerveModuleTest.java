@@ -1,7 +1,7 @@
 package org.strykeforce.swerve;
 
 import static frc.robot.Constants.Drive.kDriveGearRatio;
-import static frc.robot.Constants.Drive.kDriveMaximumMetersPerSecond;
+import static frc.robot.Constants.Drive.kMaxSpeedMetersPerSecond;
 import static frc.robot.Constants.Drive.kWheelDiameterInches;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,11 +61,13 @@ class TalonSwerveModuleTest {
       azimuthTalon = mock(TalonSRX.class);
       driveTalon = mock(TalonFX.class);
       module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
               .wheelLocationMeters(new Translation2d(1, 1))
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .build();
       sensorCollection = mock(SensorCollection.class);
       when(azimuthTalon.getSensorCollection()).thenReturn(sensorCollection);
@@ -150,11 +152,19 @@ class TalonSwerveModuleTest {
     @Test
     @DisplayName("when talon is null")
     void whenTalonIsNull() {
-      assertThrows(NullPointerException.class, () -> {
-        var builder = new TalonSwerveModule.Builder(null, driveTalon);
+      var builder = new TalonSwerveModule.Builder()
+          .azimuthTalon(azimuthTalon)
+          .driveTalon(driveTalon)
+          .driveGearRatio(kDriveGearRatio)
+          .wheelDiameterInches(kWheelDiameterInches)
+          .wheelLocationMeters(new Translation2d(1, 1))
+          .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond);
+
+      assertThrows(IllegalArgumentException.class, () -> {
+        builder.azimuthTalon(null).build();
       });
-      assertThrows(NullPointerException.class, () -> {
-        var builder = new TalonSwerveModule.Builder(azimuthTalon, null);
+      assertThrows(IllegalArgumentException.class, () -> {
+        builder.driveTalon(null).build();
       });
     }
 
@@ -162,10 +172,12 @@ class TalonSwerveModuleTest {
     @DisplayName("when drive gear ratio lte zero")
     void whenDriveGearRatioLteZero() {
       TalonSwerveModule.Builder builder =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .wheelDiameterInches(kWheelDiameterInches)
               .wheelLocationMeters(new Translation2d())
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond);
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond);
       assertThrows(IllegalArgumentException.class, builder::build);
     }
 
@@ -173,10 +185,12 @@ class TalonSwerveModuleTest {
     @DisplayName("when wheel diameter lte zero")
     void whenWheelDiameterLteZero() {
       TalonSwerveModule.Builder builder =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveGearRatio(kDriveGearRatio)
               .wheelLocationMeters(new Translation2d())
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond);
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond);
       assertThrows(IllegalArgumentException.class, builder::build);
     }
 
@@ -184,7 +198,9 @@ class TalonSwerveModuleTest {
     @DisplayName("when drive maximum meters per second lte zero")
     void whenDriveMaximumMetersPerSecondLteZero() {
       TalonSwerveModule.Builder builder =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveGearRatio(kDriveGearRatio)
               .wheelLocationMeters(new Translation2d())
               .wheelDiameterInches(kWheelDiameterInches);
@@ -195,10 +211,12 @@ class TalonSwerveModuleTest {
     @DisplayName("when wheel location not set")
     void whenWheelLocationNotSet() {
       TalonSwerveModule.Builder builder =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond);
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond);
       assertThrows(IllegalArgumentException.class, builder::build);
     }
   }
@@ -220,10 +238,12 @@ class TalonSwerveModuleTest {
     @DisplayName("drive speed with default encoder counts")
     void speedWithDefaultEncoderCounts() {
       TalonSwerveModule module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .wheelLocationMeters(new Translation2d())
               .build();
       when(driveTalon.getSelectedSensorVelocity()).thenReturn(20480.0);
@@ -237,12 +257,14 @@ class TalonSwerveModuleTest {
     void speedWithEncoderCounts(int driveEncoderCountsPerRevolution,
         double driveSelectedSensorVelocity, double expectedMetersPerSecond) {
       TalonSwerveModule module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
 //              .azimuthEncoderCountsPerRevolution(4096)
               .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .wheelLocationMeters(new Translation2d())
               .build();
       when(driveTalon.getSelectedSensorVelocity()).thenReturn(driveSelectedSensorVelocity);
@@ -300,11 +322,13 @@ class TalonSwerveModuleTest {
       }
 
       TalonSwerveModule module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
 //              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .wheelLocationMeters(new Translation2d())
               .build();
       when(azimuthTalon.getSelectedSensorPosition()).thenReturn(azimuthSelectedSensorPosition);
@@ -342,12 +366,14 @@ class TalonSwerveModuleTest {
     void driveOpenLoopSpeed(int driveEncoderCountsPerRevolution, double driveMetersPerSecond,
         double expectedPercentOutput) {
       TalonSwerveModule module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
               .wheelLocationMeters(new Translation2d())
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .build();
       when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
       var desiredState = new SwerveModuleState(driveMetersPerSecond, new Rotation2d());
@@ -374,12 +400,14 @@ class TalonSwerveModuleTest {
     void driveClosedLoopSpeed(int driveEncoderCountsPerRevolution, double driveMetersPerSecond,
         double expectedCountsPer100ms) {
       TalonSwerveModule module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
               .driveEncoderCountsPerRevolution(driveEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
               .wheelLocationMeters(new Translation2d())
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .build();
 
       when(azimuthTalon.getSelectedSensorPosition()).thenReturn(0.0);
@@ -459,12 +487,14 @@ class TalonSwerveModuleTest {
       var drivePercentOutput = 0.9523809525;
 
       TalonSwerveModule module =
-          new TalonSwerveModule.Builder(azimuthTalon, driveTalon)
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
 //              .azimuthEncoderCountsPerRevolution(azimuthEncoderCountsPerRevolution)
               .driveGearRatio(kDriveGearRatio)
               .wheelDiameterInches(kWheelDiameterInches)
               .wheelLocationMeters(new Translation2d())
-              .driveMaximumMetersPerSecond(kDriveMaximumMetersPerSecond)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
               .build();
 
       var desiredState = new SwerveModuleState(speedMetersPerSecond,
