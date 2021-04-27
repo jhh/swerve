@@ -1,8 +1,5 @@
 package org.strykeforce.swerve;
 
-import static frc.robot.Constants.Drive.kDriveGearRatio;
-import static frc.robot.Constants.Drive.kMaxSpeedMetersPerSecond;
-import static frc.robot.Constants.Drive.kWheelDiameterInches;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -11,6 +8,9 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.strykeforce.swerve.TestConstants.kDriveGearRatio;
+import static org.strykeforce.swerve.TestConstants.kMaxSpeedMetersPerSecond;
+import static org.strykeforce.swerve.TestConstants.kWheelDiameterInches;
 
 import com.ctre.phoenix.ErrorCode;
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -34,7 +34,7 @@ import org.mockito.ArgumentCaptor;
 
 class TalonSwerveModuleTest {
 
-  private static final NetworkTableInstance nti = NetworkTableInstance.create();
+  static final NetworkTableInstance nti = NetworkTableInstance.create();
 
   @BeforeAll
   static void beforeAll() {
@@ -45,6 +45,23 @@ class TalonSwerveModuleTest {
   static void afterAll() {
     nti.stopLocal();
     nti.close();
+  }
+  @Test
+  @DisplayName("Should reset drive encoder")
+  void resetDriveEncoder() {
+    TalonSRX driveTalon = mock(TalonSRX.class);
+    TalonSwerveModule module =
+        new TalonSwerveModule.Builder()
+            .azimuthTalon(mock(TalonSRX.class))
+            .driveTalon(driveTalon)
+            .driveGearRatio(kDriveGearRatio)
+            .wheelDiameterInches(kWheelDiameterInches)
+            .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
+            .wheelLocationMeters(new Translation2d())
+            .build();
+    when(driveTalon.setSelectedSensorPosition(0)).thenReturn(ErrorCode.valueOf(0));
+    module.resetDriveEncoder();
+    verify(driveTalon).setSelectedSensorPosition(0);
   }
 
   @Nested
@@ -71,6 +88,53 @@ class TalonSwerveModuleTest {
               .build();
       sensorCollection = mock(SensorCollection.class);
       when(azimuthTalon.getSensorCollection()).thenReturn(sensorCollection);
+    }
+
+
+    @Test
+    @DisplayName("should store azimuth zero reference")
+    void storeAzimuthZeroReference() {
+      TalonSwerveModule.Builder builder =
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond);
+
+      Preferences preferences = Preferences.getInstance();
+
+      int expectedZeroReference = 27;
+      int index = 0; // fixture wheel is LF
+      String key = String.format("SwerveDrive/wheel.%d", index);
+      module = builder.wheelLocationMeters(new Translation2d(1, 1)).build();
+      when(sensorCollection.getPulseWidthPosition()).thenReturn(expectedZeroReference);
+      module.storeAzimuthZeroReference();
+      assertEquals(expectedZeroReference, preferences.getInt(key, -1));
+
+      expectedZeroReference = 67;
+      index = 1; // fixture wheel is RF
+      key = String.format("SwerveDrive/wheel.%d", index);
+      module = builder.wheelLocationMeters(new Translation2d(1, -1)).build();
+      when(sensorCollection.getPulseWidthPosition()).thenReturn(expectedZeroReference);
+      module.storeAzimuthZeroReference();
+      assertEquals(expectedZeroReference, preferences.getInt(key, -1));
+
+      expectedZeroReference = 2767;
+      index = 2; // fixture wheel is LR
+      key = String.format("SwerveDrive/wheel.%d", index);
+      module = builder.wheelLocationMeters(new Translation2d(-1, 1)).build();
+      when(sensorCollection.getPulseWidthPosition()).thenReturn(expectedZeroReference);
+      module.storeAzimuthZeroReference();
+      assertEquals(expectedZeroReference, preferences.getInt(key, -1));
+
+      expectedZeroReference = 6727;
+      index = 3; // fixture wheel is RR
+      key = String.format("SwerveDrive/wheel.%d", index);
+      module = builder.wheelLocationMeters(new Translation2d(-1, -1)).build();
+      when(sensorCollection.getPulseWidthPosition()).thenReturn(expectedZeroReference);
+      module.storeAzimuthZeroReference();
+      assertEquals(expectedZeroReference & 0xFFF, preferences.getInt(key, -1));
     }
 
     @ParameterizedTest
@@ -336,6 +400,36 @@ class TalonSwerveModuleTest {
       var expectedRotation = Rotation2d.fromDegrees(expectedAngleDeg);
       assertEquals(expectedRotation, state.angle);
     }
+
+    @Test
+    void getMaxSpeedMetersPerSecond() {
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
+              .wheelLocationMeters(new Translation2d())
+              .build();
+      assertEquals(kMaxSpeedMetersPerSecond, module.getMaxSpeedMetersPerSecond());
+    }
+
+    @Test
+    void getWheelLocationMeters() {
+      var expectedWheelLocation = new Translation2d(27, 67);
+      TalonSwerveModule module =
+          new TalonSwerveModule.Builder()
+              .azimuthTalon(azimuthTalon)
+              .driveTalon(driveTalon)
+              .driveGearRatio(kDriveGearRatio)
+              .wheelDiameterInches(kWheelDiameterInches)
+              .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
+              .wheelLocationMeters(expectedWheelLocation)
+              .build();
+      assertEquals(expectedWheelLocation, module.getWheelLocationMeters());
+    }
+
   }
 
   @Nested

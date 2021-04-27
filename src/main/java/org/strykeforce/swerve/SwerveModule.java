@@ -38,6 +38,11 @@ public interface SwerveModule {
   }
 
   /**
+   * Resets the drive encoders to currently read a position of 0.
+   */
+  void resetDriveEncoder();
+
+  /**
    * Save the current azimuth absolute encoder reference position in NetworkTables preferences. Call
    * this method following physical alignment of the module wheel in its zeroed position. Used
    * during module instantiation to initialize the relative encoder.

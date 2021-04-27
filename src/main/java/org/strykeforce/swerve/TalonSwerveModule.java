@@ -70,6 +70,14 @@ public class TalonSwerveModule implements SwerveModule {
   }
 
   @Override
+  public void resetDriveEncoder() {
+    var errorCode = driveTalon.setSelectedSensorPosition(0);
+    if (errorCode.value != 0) {
+      logger.error("Talon error code while resetting encoder to 0: {}", errorCode);
+    }
+  }
+
+  @Override
   public void storeAzimuthZeroReference() {
     int index = getWheelIndex();
     int position = getAzimuthAbsoluteEncoderCounts();
@@ -95,9 +103,9 @@ public class TalonSwerveModule implements SwerveModule {
     logger.info("swerve module {}: azimuth absolute position = {}", index, azimuthAbsoluteCounts);
 
     int azimuthSetpoint = azimuthAbsoluteCounts - reference;
-    ErrorCode err = azimuthTalon.setSelectedSensorPosition(azimuthSetpoint, 0, 10);
-    if (err.value != 0) {
-      logger.warn("Talon error code while setting azimuth zero: {}", err);
+    ErrorCode errorCode = azimuthTalon.setSelectedSensorPosition(azimuthSetpoint, 0, 10);
+    if (errorCode.value != 0) {
+      logger.error("Talon error code while setting azimuth zero: {}", errorCode);
     }
 
     azimuthTalon.set(MotionMagic, azimuthSetpoint);

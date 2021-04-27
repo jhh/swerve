@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveOdometry;
+import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -70,12 +71,19 @@ public class SwerveDrive {
     odometry.resetPosition(pose, gyro.getRotation2d());
   }
 
+  public void resetDriveEncoders() {
+    for (int i = 0; i < 4; i++) {
+      swerveModules[i].resetDriveEncoder();
+    }
+  }
+
   public void periodic() {
     odometry.update(gyro.getRotation2d(), swerveModules[0].getState(), swerveModules[1].getState(),
         swerveModules[2].getState(), swerveModules[3].getState());
   }
 
-  void drive(double vxMetersPerSecond, double vyMetersPerSecond, double omegaRadiansPerSecond,
+  public void drive(double vxMetersPerSecond, double vyMetersPerSecond,
+      double omegaRadiansPerSecond,
       boolean isFieldOriented) {
     ChassisSpeeds chassisSpeeds = isFieldOriented ? ChassisSpeeds
         .fromFieldRelativeSpeeds(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond,
@@ -85,10 +93,16 @@ public class SwerveDrive {
     var swerveModuleStates = kinematics.toSwerveModuleStates(chassisSpeeds);
     SwerveDriveKinematics.normalizeWheelSpeeds(swerveModuleStates, maxSpeedMetersPerSecond);
 
-    swerveModules[0].setDesiredState(swerveModuleStates[0], true);
-    swerveModules[1].setDesiredState(swerveModuleStates[1], true);
-    swerveModules[2].setDesiredState(swerveModuleStates[2], true);
-    swerveModules[3].setDesiredState(swerveModuleStates[3], true);
+    for (int i = 0; i < 4; i++) {
+      swerveModules[i].setDesiredState(swerveModuleStates[i], true);
+    }
+  }
+
+  public void setModuleStates(SwerveModuleState[] desiredStates) {
+    SwerveDriveKinematics.normalizeWheelSpeeds(desiredStates, maxSpeedMetersPerSecond);
+    for (int i = 0; i < 4; i++) {
+      swerveModules[i].setDesiredState(desiredStates[i], true);
+    }
   }
 
 }

@@ -1,17 +1,22 @@
 package org.strykeforce.swerve;
 
-import static frc.robot.Constants.Drive.kMaxSpeedMetersPerSecond;
-import static frc.robot.Constants.Drive.kWheelLocations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.strykeforce.swerve.TestConstants.kMaxSpeedMetersPerSecond;
+import static org.strykeforce.swerve.TestConstants.kWheelLocations;
 
+import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,11 +26,22 @@ import org.mockito.ArgumentCaptor;
 class SwerveDriveTest {
 
   final ArgumentCaptor<SwerveModuleState> captor = ArgumentCaptor.forClass(SwerveModuleState.class);
+  private final SwerveModule[] swerveModules = new SwerveModule[4];
+  private Gyro gyro;
+
+  @BeforeEach
+  void setUp() {
+    for (int i = 0; i < 4; i++) {
+      swerveModules[i] = mock(SwerveModule.class);
+      when(swerveModules[i].getWheelLocationMeters()).thenReturn(kWheelLocations[i]);
+      when(swerveModules[i].getMaxSpeedMetersPerSecond()).thenReturn(kMaxSpeedMetersPerSecond);
+    }
+    gyro = mock(Gyro.class);
+  }
 
   @Test
   @DisplayName("Should throw on multiple max speeds")
   void shouldThrowOnMultipleMaxSpeeds() {
-    SwerveModule[] swerveModules = new SwerveModule[4];
 
     for (int i = 0; i < 4; i++) {
       swerveModules[i] = mock(SwerveModule.class);
@@ -42,19 +58,11 @@ class SwerveDriveTest {
   @CsvFileSource(resources = "/swerve_test_cases.csv", numLinesToSkip = 1)
   @DisplayName("Should produce correct swerve module states")
   void shouldProduceCorrectSwerveModuleStates(double vxMetersPerSecond, double vyMetersPerSecond,
-      double omegaRadiansPerSecond, boolean isFieldOriented, double gyroAngle, double lfAngle, double lfSpeed,
+      double omegaRadiansPerSecond, boolean isFieldOriented, double gyroAngle, double lfAngle,
+      double lfSpeed,
       double rfAngle, double rfSpeed, double lrAngle, double lrSpeed, double rrAngle,
       double rrSpeed) {
 
-    SwerveModule[] swerveModules = new SwerveModule[4];
-
-    for (int i = 0; i < 4; i++) {
-      swerveModules[i] = mock(SwerveModule.class);
-      when(swerveModules[i].getWheelLocationMeters()).thenReturn(kWheelLocations[i]);
-      when(swerveModules[i].getMaxSpeedMetersPerSecond()).thenReturn(kMaxSpeedMetersPerSecond);
-    }
-
-    Gyro gyro = mock(Gyro.class);
     when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(gyroAngle));
     SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
 
@@ -84,4 +92,74 @@ class SwerveDriveTest {
     assertEquals(rrSpeed, state.speedMetersPerSecond, 1e-9, "right rear speed");
   }
 
+  @Test
+  void getKinematics() {
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(-45));
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    assertNotNull(swerveDrive.getKinematics());
+  }
+
+  @Test
+  void getPoseMeters() {
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(-45));
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    assertNotNull(swerveDrive.getPoseMeters());
+  }
+
+  @Test
+  void getHeading() {
+    var expected = Rotation2d.fromDegrees(45);
+    when(gyro.getRotation2d()).thenReturn(expected);
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    assertEquals(expected, swerveDrive.getHeading());
+  }
+
+  @Test
+  void resetOdometry() {
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(27));
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    Pose2d expected = new Pose2d(new Translation2d(2, 3), Rotation2d.fromDegrees(67));
+    swerveDrive.resetOdometry(expected);
+    assertEquals(expected, swerveDrive.getPoseMeters());
+  }
+
+  @Test
+  void resetDriveEncoders() {
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(27));
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    swerveDrive.resetDriveEncoders();
+    for (int i = 0; i < 4; i++) {
+      verify(swerveModules[i]).resetDriveEncoder();
+    }
+  }
+
+  @Test
+  void periodic() {
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(27));
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    for (int i = 0; i < 4; i++) {
+      when(swerveModules[i].getState())
+          .thenReturn(new SwerveModuleState(1, Rotation2d.fromDegrees(1)));
+    }
+    swerveDrive.periodic();
+    verify(gyro, times(2)).getRotation2d();
+    for (int i = 0; i < 4; i++) {
+      verify(swerveModules[i]).getState();
+    }
+  }
+
+  @Test
+  void setModuleStates() {
+    when(gyro.getRotation2d()).thenReturn(Rotation2d.fromDegrees(27));
+    SwerveDrive swerveDrive = new SwerveDrive(gyro, swerveModules);
+    SwerveModuleState expectedState = new SwerveModuleState(1, Rotation2d.fromDegrees(3));
+    SwerveModuleState[] desiredStates = new SwerveModuleState[4];
+    for (int i = 0; i < 4; i++) {
+      desiredStates[i]=expectedState;
+    }
+    swerveDrive.setModuleStates(desiredStates);
+    for (int i = 0; i < 4; i++) {
+      verify(swerveModules[i]).setDesiredState(expectedState, true);
+    }
+  }
 }

@@ -5,11 +5,8 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import org.strykeforce.swerve.TalonSwerveModule;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -22,7 +19,6 @@ public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
   private RobotContainer m_robotContainer;
-  private TalonSwerveModule swerveModule;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -92,8 +88,6 @@ public class Robot extends TimedRobot {
       m_autonomousCommand.cancel();
     }
 
-    SwerveModuleState desiredState = new SwerveModuleState(1, Rotation2d.fromDegrees(135));
-    swerveModule.setDesiredState(desiredState, true);
   }
 
   /**
