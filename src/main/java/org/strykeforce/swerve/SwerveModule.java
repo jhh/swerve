@@ -3,6 +3,9 @@ package org.strykeforce.swerve;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
 
+/**
+ * Represents a Third Coast swerve module.
+ */
 public interface SwerveModule {
 
   /**

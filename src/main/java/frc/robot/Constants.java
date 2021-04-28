@@ -7,7 +7,6 @@ package frc.robot;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.LimitSwitchSource;
 import com.ctre.phoenix.motorcontrol.VelocityMeasPeriod;
-import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 
@@ -23,71 +22,74 @@ public final class Constants {
 
   public final static int kTalonConfigTimeout = 10; // ms
 
-  public static final class Drive {
+  public static final class DriveConstants {
 
-    public static final double kDriveMotorOutputGear = 22;
-    public static final double kDriveInputGear = 48;
-    public static final double kBevelInputGear = 15;
-    public static final double kBevelOutputGear = 45;
+    // Skippy
+    static final double kDriveMotorOutputGear = 22;
+    static final double kDriveInputGear = 48;
+    static final double kBevelInputGear = 15;
+    static final double kBevelOutputGear = 45;
     public static final double kDriveGearRatio =
         (kDriveMotorOutputGear / kDriveInputGear) * (kBevelInputGear / kBevelOutputGear);
 
-    // Skippy
     public static final double kWheelDiameterInches = 2.4;
     public static final double kMaxSpeedMetersPerSecond = 3.53568;
 
-    public final static Translation2d[] kWheelLocations = new Translation2d[4];
 
-    public final static TalonSRXConfiguration kAzimuthTalonConfiguration;
-    public final static TalonSRXConfiguration kDriveTalonConfiguration = new TalonSRXConfiguration();
-
-    static {
+    public static Translation2d[] getWheelLocationMeters() {
+      // skippy is square frame
       final double offset = 0.27305;
-      kWheelLocations[0] = new Translation2d(offset, offset); // left front
-      kWheelLocations[1] = new Translation2d(offset, -offset); // right front
-      kWheelLocations[2] = new Translation2d(-offset, offset); // left rear
-      kWheelLocations[3] = new Translation2d(-offset, -offset); // right rear
+      Translation2d[] locs = new Translation2d[4];
+      locs[0] = new Translation2d(offset, offset); // left front
+      locs[1] = new Translation2d(offset, -offset); // right front
+      locs[2] = new Translation2d(-offset, offset); // left rear
+      locs[3] = new Translation2d(-offset, -offset); // right rear
+      return locs;
     }
 
-    // https://docs.ctre-phoenix.com/en/stable/ch16_ClosedLoop.html#closed-loop-configurations
-    static {
+    public static TalonSRXConfiguration getAzimuthTalonConfig() {
       // constructor sets encoder to Quad/CTRE_MagEncoder_Relative
-      kAzimuthTalonConfiguration = new TalonSRXConfiguration();
+      TalonSRXConfiguration azimuthConfig = new TalonSRXConfiguration();
 
-      kAzimuthTalonConfiguration.primaryPID.selectedFeedbackCoefficient = 1.0;
-      kAzimuthTalonConfiguration.auxiliaryPID.selectedFeedbackSensor = FeedbackDevice.None;
+      azimuthConfig.primaryPID.selectedFeedbackCoefficient = 1.0;
+      azimuthConfig.auxiliaryPID.selectedFeedbackSensor = FeedbackDevice.None;
 
-      kAzimuthTalonConfiguration.forwardLimitSwitchSource = LimitSwitchSource.Deactivated;
-      kAzimuthTalonConfiguration.reverseLimitSwitchSource = LimitSwitchSource.Deactivated;
+      azimuthConfig.forwardLimitSwitchSource = LimitSwitchSource.Deactivated;
+      azimuthConfig.reverseLimitSwitchSource = LimitSwitchSource.Deactivated;
 
-      kAzimuthTalonConfiguration.continuousCurrentLimit = 10;
-      kAzimuthTalonConfiguration.peakCurrentDuration = 1;
-      kAzimuthTalonConfiguration.peakCurrentLimit = 1;
-      kAzimuthTalonConfiguration.slot0.kP = 10.0;
-      kAzimuthTalonConfiguration.slot0.kI = 0.0;
-      kAzimuthTalonConfiguration.slot0.kD = 100.0;
-      kAzimuthTalonConfiguration.slot0.kF = 1.0;
-      kAzimuthTalonConfiguration.slot0.integralZone = 0;
-      kAzimuthTalonConfiguration.slot0.allowableClosedloopError = 0;
-      kAzimuthTalonConfiguration.slot0.maxIntegralAccumulator = 10;
-      kAzimuthTalonConfiguration.motionCruiseVelocity = 800;
-      kAzimuthTalonConfiguration.motionAcceleration = 10_000;
-      kAzimuthTalonConfiguration.velocityMeasurementWindow = 64;
-      kAzimuthTalonConfiguration.voltageCompSaturation = 12;
+      azimuthConfig.continuousCurrentLimit = 10;
+      azimuthConfig.peakCurrentDuration = 1;
+      azimuthConfig.peakCurrentLimit = 1;
+      azimuthConfig.slot0.kP = 10.0;
+      azimuthConfig.slot0.kI = 0.0;
+      azimuthConfig.slot0.kD = 100.0;
+      azimuthConfig.slot0.kF = 1.0;
+      azimuthConfig.slot0.integralZone = 0;
+      azimuthConfig.slot0.allowableClosedloopError = 0;
+      azimuthConfig.slot0.maxIntegralAccumulator = 10;
+      azimuthConfig.motionCruiseVelocity = 800;
+      azimuthConfig.motionAcceleration = 10_000;
+      azimuthConfig.velocityMeasurementWindow = 64;
+      azimuthConfig.voltageCompSaturation = 12;
+      return azimuthConfig;
+    }
 
-      kDriveTalonConfiguration.continuousCurrentLimit = 40;
-      kDriveTalonConfiguration.peakCurrentDuration = 0;
-      kDriveTalonConfiguration.peakCurrentLimit = 0;
-      kDriveTalonConfiguration.slot0.kP = 0.010;
-      kDriveTalonConfiguration.slot0.kI = 0.0003;
-      kDriveTalonConfiguration.slot0.kD = 0.600;
-      kDriveTalonConfiguration.slot0.kF = 0.028;
-      kDriveTalonConfiguration.slot0.integralZone = 3000;
-      kDriveTalonConfiguration.slot0.maxIntegralAccumulator = 200_000;
-      kDriveTalonConfiguration.slot0.allowableClosedloopError = 0;
-      kDriveTalonConfiguration.velocityMeasurementPeriod = VelocityMeasPeriod.Period_100Ms;
-      kDriveTalonConfiguration.velocityMeasurementWindow = 64;
-      kDriveTalonConfiguration.voltageCompSaturation = 12;
+    public static TalonSRXConfiguration getDriveTalonConfig() {
+      TalonSRXConfiguration driveConfig = new TalonSRXConfiguration();
+      driveConfig.continuousCurrentLimit = 40;
+      driveConfig.peakCurrentDuration = 0;
+      driveConfig.peakCurrentLimit = 0;
+      driveConfig.slot0.kP = 0.010;
+      driveConfig.slot0.kI = 0.0003;
+      driveConfig.slot0.kD = 0.600;
+      driveConfig.slot0.kF = 0.028;
+      driveConfig.slot0.integralZone = 3000;
+      driveConfig.slot0.maxIntegralAccumulator = 200_000;
+      driveConfig.slot0.allowableClosedloopError = 0;
+      driveConfig.velocityMeasurementPeriod = VelocityMeasPeriod.Period_100Ms;
+      driveConfig.velocityMeasurementWindow = 64;
+      driveConfig.voltageCompSaturation = 12;
+      return driveConfig;
     }
 
   }

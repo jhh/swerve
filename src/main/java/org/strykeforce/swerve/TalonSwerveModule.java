@@ -14,6 +14,21 @@ import edu.wpi.first.wpilibj.util.Units;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A swerve module that uses Talons for azimuth and drive motors. Uses a {@link Builder} to
+ * construct.
+ * <pre>
+ * TalonSwerveModule module =
+ *   new TalonSwerveModule.Builder()
+ *       .azimuthTalon(azimuthTalon)
+ *       .driveTalon(driveTalon)
+ *       .driveGearRatio(kDriveGearRatio)
+ *       .wheelDiameterInches(kWheelDiameterInches)
+ *       .driveMaximumMetersPerSecond(kMaxSpeedMetersPerSecond)
+ *       .wheelLocationMeters(kWheelLocationMeters)
+ *       .build();
+ * </pre>
+ */
 public class TalonSwerveModule implements SwerveModule {
 
   private static final Logger logger = LoggerFactory.getLogger(TalonSwerveModule.class);

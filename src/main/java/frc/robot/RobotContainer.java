@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import frc.robot.Constants.Drive;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.commands.IndexAzimuthCommand;
 import frc.robot.subsystems.DriveSubsystem;
 
@@ -35,10 +35,11 @@ public class RobotContainer {
 
     driveSubsystem.setDefaultCommand(new RunCommand(
         () -> {
-          double vx = getLeftX() * Drive.kMaxSpeedMetersPerSecond;
-          double vy = getLeftY() * Drive.kMaxSpeedMetersPerSecond;
+          double vx = getLeftX() * DriveConstants.kMaxSpeedMetersPerSecond;
+          double vy = getLeftY() * DriveConstants.kMaxSpeedMetersPerSecond;
           double omega = getRightY() * Math.PI;
-          driveSubsystem.drive(vx, vy, omega);
+//          driveSubsystem.drive(vx, vy, omega);
+          System.out.printf("vx = %f, vy=%f, omega=%f%n", vx, vy, omega);
         }
         , driveSubsystem));
   }
@@ -67,7 +68,7 @@ public class RobotContainer {
    * Left stick X (up-down) axis.
    */
   public double getLeftX() {
-    return -joystick.getRawAxis(Axis.LEFT_X.id);
+    return joystick.getRawAxis(Axis.LEFT_X.id);
   }
 
   /**
