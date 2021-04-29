@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.DriveConstants;
@@ -22,6 +23,8 @@ import frc.robot.subsystems.DriveSubsystem;
  */
 public class RobotContainer {
 
+  private final static double kJoystickDeadband = 0.1;
+
   // The robot's subsystems and commands are defined here...
   private final DriveSubsystem driveSubsystem = new DriveSubsystem();
   private Joystick joystick = new Joystick(0);
@@ -35,11 +38,10 @@ public class RobotContainer {
 
     driveSubsystem.setDefaultCommand(new RunCommand(
         () -> {
-          double vx = getLeftX() * DriveConstants.kMaxSpeedMetersPerSecond;
-          double vy = getLeftY() * DriveConstants.kMaxSpeedMetersPerSecond;
-          double omega = getRightY() * Math.PI;
-//          driveSubsystem.drive(vx, vy, omega);
-          System.out.printf("vx = %f, vy=%f, omega=%f%n", vx, vy, omega);
+          double vx = getLeftX() * -DriveConstants.kMaxSpeedMetersPerSecond;
+          double vy = getLeftY() * -DriveConstants.kMaxSpeedMetersPerSecond;
+          double omega = getRightY() * -2.0 * Math.PI;
+          driveSubsystem.drive(vx, vy, omega);
         }
         , driveSubsystem));
   }
@@ -52,6 +54,8 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     new JoystickButton(joystick, Button.X.id).whenPressed(new IndexAzimuthCommand(driveSubsystem));
+    new JoystickButton(joystick, Button.RESET.id)
+        .whenPressed(new InstantCommand(driveSubsystem::resetGyro, driveSubsystem));
   }
 
   /**
@@ -68,21 +72,33 @@ public class RobotContainer {
    * Left stick X (up-down) axis.
    */
   public double getLeftX() {
-    return joystick.getRawAxis(Axis.LEFT_X.id);
+    double val = joystick.getRawAxis(Axis.LEFT_X.id);
+    if (Math.abs(val) < kJoystickDeadband) {
+      return 0.0;
+    }
+    return val;
   }
 
   /**
    * Left stick Y (left-right) axis.
    */
   public double getLeftY() {
-    return joystick.getRawAxis(Axis.LEFT_Y.id);
+    double val = joystick.getRawAxis(Axis.LEFT_Y.id);
+    if (Math.abs(val) < kJoystickDeadband) {
+      return 0.0;
+    }
+    return val;
   }
 
   /**
    * Right stick Y (left-right) axis.
    */
   public double getRightY() {
-    return joystick.getRawAxis(Axis.RIGHT_Y.id);
+    double val = joystick.getRawAxis(Axis.RIGHT_Y.id);
+    if (Math.abs(val) < kJoystickDeadband) {
+      return 0.0;
+    }
+    return val;
   }
 
   public enum Axis {

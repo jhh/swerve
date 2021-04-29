@@ -41,8 +41,11 @@ public class TalonSwerveModule implements SwerveModule {
   private final double driveCountsPerRev;
   private final double driveGearRatio;
   private final double wheelCircumferenceMeters;
+  private final double driveDeadbandMetersPerSecond;
   private final double driveMaximumMetersPerSecond;
   private final Translation2d wheelLocationMeters;
+
+  private Rotation2d previousAngle = new Rotation2d();
 
   private TalonSwerveModule(Builder builder) {
     azimuthTalon = builder.azimuthTalon;
@@ -51,6 +54,7 @@ public class TalonSwerveModule implements SwerveModule {
     driveCountsPerRev = builder.driveCountsPerRev;
     driveGearRatio = builder.driveGearRatio;
     wheelCircumferenceMeters = Math.PI * Units.inchesToMeters(builder.wheelDiameterInches);
+    driveDeadbandMetersPerSecond = builder.driveDeadbandMetersPerSecond;
     driveMaximumMetersPerSecond = builder.driveMaximumMetersPerSecond;
     wheelLocationMeters = builder.wheelLocationMeters;
   }
@@ -74,6 +78,13 @@ public class TalonSwerveModule implements SwerveModule {
 
   @Override
   public void setDesiredState(SwerveModuleState desiredState, boolean isDriveOpenLoop) {
+    assert desiredState.speedMetersPerSecond >= 0.0;
+
+    if (desiredState.speedMetersPerSecond < driveDeadbandMetersPerSecond) {
+      desiredState = new SwerveModuleState(0.0, previousAngle);
+    }
+    previousAngle = desiredState.angle;
+
     Rotation2d currentAngle = getAzimuthRotation2d();
     SwerveModuleState optimizedState = SwerveModuleState.optimize(desiredState, currentAngle);
     setAzimuthRotation2d(optimizedState.angle);
@@ -193,6 +204,7 @@ public class TalonSwerveModule implements SwerveModule {
     private double driveGearRatio;
     private double wheelDiameterInches;
     private int driveCountsPerRev = kDefaultTalonFXCountsPerRev;
+    private double driveDeadbandMetersPerSecond = -1.0;
     private double driveMaximumMetersPerSecond;
     private Translation2d wheelLocationMeters;
 
@@ -224,6 +236,11 @@ public class TalonSwerveModule implements SwerveModule {
       return this;
     }
 
+    public Builder driveDeadbandMetersPerSecond(double metersPerSecond) {
+      driveDeadbandMetersPerSecond = metersPerSecond;
+      return this;
+    }
+
     // we currently only support TalonSRX for azimuth
 //    public Builder azimuthEncoderCountsPerRevolution(int countsPerRev) {
 //      azimuthCountsPerRev = countsPerRev;
@@ -241,6 +258,9 @@ public class TalonSwerveModule implements SwerveModule {
     }
 
     public TalonSwerveModule build() {
+      if (driveDeadbandMetersPerSecond < 0) {
+        driveDeadbandMetersPerSecond = 0.01 * driveMaximumMetersPerSecond;
+      }
       var module = new TalonSwerveModule(this);
       validateTalonSwerveModuleObject(module);
       return module;

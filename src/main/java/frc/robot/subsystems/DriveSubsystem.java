@@ -58,6 +58,7 @@ public class DriveSubsystem extends SubsystemBase {
     }
 
     swerveDrive = new SwerveDrive(swerveModules);
+    swerveDrive.resetGyro();
   }
 
   /**
@@ -73,7 +74,11 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void drive(double vxMetersPerSecond, double vyMetersPerSecond,
       double omegaRadiansPerSecond) {
-    swerveDrive.drive(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, false);
+    swerveDrive.drive(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, true);
+  }
+
+  public void resetGyro() {
+    swerveDrive.resetGyro();
   }
 
   /**

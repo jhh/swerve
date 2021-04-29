@@ -109,10 +109,20 @@ public class SwerveDrive {
     odometry.resetPosition(pose, gyro.getRotation2d());
   }
 
+  /**
+   * Resets the drive encoders to currently read a position of 0.
+   */
   public void resetDriveEncoders() {
     for (int i = 0; i < 4; i++) {
       swerveModules[i].resetDriveEncoder();
     }
+  }
+
+  /**
+   * Resets the gyro to a heading of zero.
+   */
+  public void resetGyro() {
+    gyro.reset();
   }
 
   /**
