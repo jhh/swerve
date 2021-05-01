@@ -55,6 +55,8 @@ public class DriveSubsystem extends SubsystemBase {
           .driveTalon(driveTalon)
           .wheelLocationMeters(wheelLocations[i])
           .build();
+
+      swerveModules[i].loadAndSetAzimuthZeroReference();
     }
 
     swerveDrive = new SwerveDrive(swerveModules);
