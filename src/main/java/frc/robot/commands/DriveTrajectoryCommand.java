@@ -99,16 +99,19 @@ public class DriveTrajectoryCommand extends CommandBase {
       action.setMeta(meta);
       var measures = action.getMeasures();
       measures.add("traj_accel");
-      measures.add("curvature");
-      measures.add("pose_x");
-      measures.add("pose_y");
-      measures.add("pose_degrees");
-      measures.add("time");
+      measures.add("traj_curvature");
+      measures.add("traj_pose_x");
+      measures.add("traj_pose_y");
+      measures.add("traj_pose_degrees");
+      measures.add("traj_time");
       measures.add("traj_vel");
       measures.add("gyro_degrees");
       measures.add("hc_vx");
       measures.add("hc_vy");
       measures.add("hc_omega");
+      measures.add("od_pose_x");
+      measures.add("od_pose_y");
+      measures.add("od_pose_degrees");
 
 
       action = session.post(action);
@@ -135,6 +138,9 @@ public class DriveTrajectoryCommand extends CommandBase {
       data.add(speeds.vxMetersPerSecond);
       data.add(speeds.vyMetersPerSecond);
       data.add(speeds.omegaRadiansPerSecond);
+      data.add(driveSubsystem.getPoseMeters().getX());
+      data.add(driveSubsystem.getPoseMeters().getY());
+      data.add(driveSubsystem.getPoseMeters().getRotation().getDegrees());
     }
 
     void post() {

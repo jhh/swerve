@@ -95,7 +95,7 @@ public class RobotContainer {
     var meta = new HashMap<String, Object>();
     meta.put("name", "Trajectory Testing");
     meta.put("description", "2.0m x-direction trajectory");
-    meta.put("version", "e58baaa");
+    meta.put("version", "8226949");
     meta.put("simulator", Boolean.FALSE);
     meta.put("trajectoryTime", trajectory.getTotalTimeSeconds());
     var trajectoryMeta = new HashMap<String, Object>();
