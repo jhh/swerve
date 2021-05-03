@@ -4,24 +4,27 @@ import static frc.robot.Constants.kTalonConfigTimeout;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import frc.robot.Constants.DriveConstants;
+import java.util.Set;
+import java.util.function.DoubleSupplier;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.swerve.SwerveDrive;
 import org.strykeforce.swerve.TalonSwerveModule;
+import org.strykeforce.thirdcoast.telemetry.item.Measure;
 
-public class DriveSubsystem extends SubsystemBase {
+public class DriveSubsystem extends MeasureableSubsystem {
 
   private static final Logger logger = LoggerFactory.getLogger(DriveSubsystem.class);
-
+  private final static String GYRO_ANGLE = "GYRO_ANGLE";
   private final SwerveDrive swerveDrive;
-
-  private final double[] angles = new double[]{0.0, 45.0, -45.0};
-  private int angleIndex = 0;
+  private Trajectory trajectory;
 
   /**
    * Uses the Third Coast SwerveDrive.
@@ -64,6 +67,34 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
+   * Returns the swerve drive kinematics object for use during trajectory configuration.
+   *
+   * @return the configured kinemetics object
+   */
+  public SwerveDriveKinematics getSwerveDriveKinematics() {
+    return swerveDrive.getKinematics();
+  }
+
+  /**
+   * Resets the robot's position on the field.
+   *
+   * @param pose the current pose
+   */
+  public void resetOdometry(Pose2d pose) {
+    swerveDrive.resetOdometry(pose);
+    logger.info("reset odometry with pose = {}", pose);
+  }
+
+  /**
+   * Returns the position of the robot on the field.
+   *
+   * @return the pose of the robot (x and y ane in meters)
+   */
+  public Pose2d getPoseMeters() {
+    return swerveDrive.getPoseMeters();
+  }
+
+  /**
    * Perform periodic swerve drive odometry update.
    */
   @Override
@@ -83,16 +114,29 @@ public class DriveSubsystem extends SubsystemBase {
     swerveDrive.resetGyro();
   }
 
-  /**
-   * Swerve drive debugging support.
-   */
-  public void next() {
-    double angle = angles[angleIndex++ % angles.length];
-    SwerveModuleState[] desiredStates = new SwerveModuleState[4];
-    for (int i = 0; i < 4; i++) {
-      desiredStates[i] = new SwerveModuleState(0.0, Rotation2d.fromDegrees(angle));
-    }
-    swerveDrive.setModuleStates(desiredStates);
-    logger.debug("Set azimuth to next angle: {}", angle);
+  public Rotation2d getHeading() {
+    return swerveDrive.getHeading();
   }
+
+  // Measurable Support
+
+  @NotNull
+  @Override
+  public Set<Measure> getMeasures() {
+    Set<Measure> measures = Set.of(new Measure(GYRO_ANGLE, "Gyro Angle (degrees)"));
+    return measures;
+  }
+
+  @NotNull
+  @Override
+  public DoubleSupplier measurementFor(@NotNull Measure measure) {
+    switch (measure.getName()) {
+      case GYRO_ANGLE:
+        return () -> swerveDrive.getHeading().getDegrees();
+      default:
+        return () -> 2767.0;
+    }
+  }
+
+
 }

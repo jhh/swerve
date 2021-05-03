@@ -25,14 +25,14 @@ public final class Constants {
   public static final class DriveConstants {
 
     // Skippy
-    static final double kDriveMotorOutputGear = 22;
-    static final double kDriveInputGear = 48;
-    static final double kBevelInputGear = 15;
-    static final double kBevelOutputGear = 45;
+    static final double kDriveMotorOutputGear = 25;
+    static final double kDriveInputGear = 55;
+    static final double kBevelInputGear = 20;
+    static final double kBevelOutputGear = 40;
     public static final double kDriveGearRatio =
         (kDriveMotorOutputGear / kDriveInputGear) * (kBevelInputGear / kBevelOutputGear);
 
-    public static final double kWheelDiameterInches = 2.4;
+    public static final double kWheelDiameterInches = 2.4 * 0.497;
     public static final double kMaxSpeedMetersPerSecond = 3.53568;
 
 
