@@ -75,7 +75,7 @@ public class RobotContainer {
     new JoystickButton(joystick, Button.HAMBURGER.id)
         .whenPressed(() -> {
               logger.debug("pose = {}", driveSubsystem.getPoseMeters());
-              driveSubsystem.resetOdometry(new Pose2d(0, 0, new Rotation2d()));
+//              driveSubsystem.resetOdometry(new Pose2d(0, 0, new Rotation2d()));
             },
             driveSubsystem);
   }
@@ -95,7 +95,7 @@ public class RobotContainer {
     var meta = new HashMap<String, Object>();
     meta.put("name", "Trajectory Testing");
     meta.put("description", "2.0m x-direction trajectory");
-    meta.put("version", "f7bcf0c");
+    meta.put("version", "e58baaa");
     meta.put("simulator", Boolean.FALSE);
     meta.put("trajectoryTime", trajectory.getTotalTimeSeconds());
     var trajectoryMeta = new HashMap<String, Object>();

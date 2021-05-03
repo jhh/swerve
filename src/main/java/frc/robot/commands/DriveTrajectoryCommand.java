@@ -62,7 +62,7 @@ public class DriveTrajectoryCommand extends CommandBase {
     logger.debug("state = {}", state);
     var speeds = holonomicDriveController
         .calculate(driveSubsystem.getPoseMeters(), state, new Rotation2d());
-    driveSubsystem.drive(speeds.vxMetersPerSecond, speeds.vxMetersPerSecond,
+    driveSubsystem.move(speeds.vxMetersPerSecond, speeds.vxMetersPerSecond,
         speeds.omegaRadiansPerSecond);
     if (Trapper.isEnabled) {
       trapper.logState(state, speeds);

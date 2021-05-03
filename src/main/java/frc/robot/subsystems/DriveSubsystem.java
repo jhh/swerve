@@ -103,11 +103,19 @@ public class DriveSubsystem extends MeasureableSubsystem {
   }
 
   /**
-   * Drive the robot with given x, y, and rotational velocities.
+   * Drive the robot with given x, y, and rotational velocities with open-loop velocity control.
    */
   public void drive(double vxMetersPerSecond, double vyMetersPerSecond,
       double omegaRadiansPerSecond) {
     swerveDrive.drive(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, true);
+  }
+
+  /**
+   * Move the robot with given x, y, and rotational velocities with closed-loop velocity control.
+   */
+  public void move(double vxMetersPerSecond, double vyMetersPerSecond,
+      double omegaRadiansPerSecond) {
+    swerveDrive.move(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, true);
   }
 
   public void resetGyro() {
