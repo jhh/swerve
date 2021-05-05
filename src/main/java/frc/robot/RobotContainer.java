@@ -81,7 +81,7 @@ public class RobotContainer {
   }
 
   private Command getLogTrajectoryCommand() {
-    var config = new TrajectoryConfig(0.5, 2);
+    var config = new TrajectoryConfig(2, 4);
     config.setKinematics(driveSubsystem.getSwerveDriveKinematics());
 
     Pose2d start = new Pose2d(0, 0, new Rotation2d());
@@ -95,7 +95,7 @@ public class RobotContainer {
     var meta = new HashMap<String, Object>();
     meta.put("name", "Trajectory Testing");
     meta.put("description", "2.0m x-direction trajectory");
-    meta.put("version", "8226949");
+    meta.put("version", "a30f0b6");
     meta.put("simulator", Boolean.FALSE);
     meta.put("trajectoryTime", trajectory.getTotalTimeSeconds());
     var trajectoryMeta = new HashMap<String, Object>();

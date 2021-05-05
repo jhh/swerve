@@ -42,14 +42,14 @@ public class DriveTrajectoryCommand extends CommandBase {
   @Override
   public void initialize() {
     holonomicDriveController = new HolonomicDriveController(
-        new PIDController(1, 0, 0), new PIDController(1, 0, 0),
-        new ProfiledPIDController(1, 0, 0,
+        new PIDController(2, 0, 0), new PIDController(2, 0, 0),
+        new ProfiledPIDController(2, 0, 0,
             new TrapezoidProfile.Constraints(6.28, 3.14)));
 
-    holonomicDriveController.setEnabled(false);
+    holonomicDriveController.setEnabled(true);
 
     if (Trapper.isEnabled) {
-      trapper = new Trapper("http://192.168.3.219:8000", meta, driveSubsystem);
+      trapper = new Trapper("http://192.168.3.169:8000", meta, driveSubsystem);
     }
     driveSubsystem.resetOdometry(trajectory.getInitialPose());
     timer.reset();
@@ -62,7 +62,7 @@ public class DriveTrajectoryCommand extends CommandBase {
     logger.debug("state = {}", state);
     var speeds = holonomicDriveController
         .calculate(driveSubsystem.getPoseMeters(), state, new Rotation2d());
-    driveSubsystem.move(speeds.vxMetersPerSecond, speeds.vxMetersPerSecond,
+    driveSubsystem.move(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond,
         speeds.omegaRadiansPerSecond);
     if (Trapper.isEnabled) {
       trapper.logState(state, speeds);
