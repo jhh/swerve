@@ -3,33 +3,32 @@ package frc.robot.subsystems;
 import static frc.robot.Constants.kTalonConfigTimeout;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import frc.robot.Constants.DriveConstants;
 import java.util.Set;
-import java.util.function.DoubleSupplier;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.swerve.SwerveDrive;
 import org.strykeforce.swerve.TalonSwerveModule;
-import org.strykeforce.thirdcoast.telemetry.item.Measure;
+import org.strykeforce.telemetry.TelemetryService;
+import org.strykeforce.telemetry.measurable.MeasurableSubsystem;
+import org.strykeforce.telemetry.measurable.Measure;
 
-public class DriveSubsystem extends MeasureableSubsystem {
+public class DriveSubsystem extends MeasurableSubsystem {
 
   private static final Logger logger = LoggerFactory.getLogger(DriveSubsystem.class);
-  private final static String GYRO_ANGLE = "GYRO_ANGLE";
   private final SwerveDrive swerveDrive;
-  private Trajectory trajectory;
 
   /**
    * Uses the Third Coast SwerveDrive.
    */
-  public DriveSubsystem() {
+  public DriveSubsystem(TelemetryService telemetryService, ConsoleSubsystem consoleSubsystem) {
     var moduleBuilder = new TalonSwerveModule.Builder()
         .driveGearRatio(DriveConstants.kDriveGearRatio)
         .wheelDiameterInches(DriveConstants.kWheelDiameterInches)
@@ -46,10 +45,9 @@ public class DriveSubsystem extends MeasureableSubsystem {
       azimuthTalon.enableVoltageCompensation(true);
       azimuthTalon.setNeutralMode(NeutralMode.Coast);
 
-      var driveTalon = new TalonSRX(i + 10);
+      var driveTalon = new TalonFX(i + 10);
       driveTalon.configFactoryDefault(kTalonConfigTimeout);
       driveTalon.configAllSettings(DriveConstants.getDriveTalonConfig(), kTalonConfigTimeout);
-      driveTalon.enableCurrentLimit(true);
       driveTalon.enableVoltageCompensation(true);
       driveTalon.setNeutralMode(NeutralMode.Brake);
 
@@ -60,6 +58,10 @@ public class DriveSubsystem extends MeasureableSubsystem {
           .build();
 
       swerveModules[i].loadAndSetAzimuthZeroReference();
+      telemetryService.register(azimuthTalon);
+      consoleSubsystem.register(new Measure(String.format("azimuth %d", i),
+          () -> azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF));
+      telemetryService.register(driveTalon);
     }
 
     swerveDrive = new SwerveDrive(swerveModules);
@@ -114,8 +116,8 @@ public class DriveSubsystem extends MeasureableSubsystem {
    * Move the robot with given x, y, and rotational velocities with closed-loop velocity control.
    */
   public void move(double vxMetersPerSecond, double vyMetersPerSecond,
-      double omegaRadiansPerSecond) {
-    swerveDrive.move(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, true);
+      double omegaRadiansPerSecond, boolean isFieldOriented) {
+    swerveDrive.move(vxMetersPerSecond, vyMetersPerSecond, omegaRadiansPerSecond, isFieldOriented);
   }
 
   public void resetGyro() {
@@ -131,19 +133,8 @@ public class DriveSubsystem extends MeasureableSubsystem {
   @NotNull
   @Override
   public Set<Measure> getMeasures() {
-    Set<Measure> measures = Set.of(new Measure(GYRO_ANGLE, "Gyro Angle (degrees)"));
-    return measures;
-  }
-
-  @NotNull
-  @Override
-  public DoubleSupplier measurementFor(@NotNull Measure measure) {
-    switch (measure.getName()) {
-      case GYRO_ANGLE:
-        return () -> swerveDrive.getHeading().getDegrees();
-      default:
-        return () -> 2767.0;
-    }
+    return Set
+        .of(new Measure("Gyro Angle (degrees)", () -> swerveDrive.getHeading().getDegrees()));
   }
 
 
