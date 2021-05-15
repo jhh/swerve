@@ -59,9 +59,13 @@ public class DriveSubsystem extends MeasurableSubsystem {
 
       swerveModules[i].loadAndSetAzimuthZeroReference();
       telemetryService.register(azimuthTalon);
-      consoleSubsystem.register(new Measure(String.format("azimuth %d", i),
-          () -> azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF));
       telemetryService.register(driveTalon);
+
+      var azimuthName = String.format("azimuth %d", i);
+      consoleSubsystem.register(new Measure(azimuthName,
+          () -> azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF));
+      consoleSubsystem.register(
+          new Measure(azimuthName, () -> ((int) azimuthTalon.getSelectedSensorPosition()) & 0xFFF));
     }
 
     swerveDrive = new SwerveDrive(swerveModules);

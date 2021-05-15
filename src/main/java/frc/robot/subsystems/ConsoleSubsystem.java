@@ -25,9 +25,10 @@ public class ConsoleSubsystem extends SubsystemBase {
         console.drawString(String.format("counter = %d", ++counter), Font.FONT_5X8, 0, 18, true);
       },
       () -> {
-        console.drawStringCentered("Azimuth Abs. Pos.", Font.FONT_5X8, 5, true);
+        console.drawStringCentered("Azimuth Pos.", Font.FONT_5X8, 5, true);
         int y = 2 * Font.FONT_5X8.getOuterHeight();
-        for (var m : measures) {
+        for (int i = 0; i < 4; i++) {
+          var m = measures.get(2 * i + 1);
           var line = String.format("%s = %d", m.measure.getName(),
               (int) m.measure.getMeasurement().getAsDouble());
           console.drawString(m.previous, Font.FONT_5X8, 2, y, false);
@@ -35,6 +36,27 @@ public class ConsoleSubsystem extends SubsystemBase {
           m.previous = line;
           y += Font.FONT_5X8.getOuterHeight();
         }
+      },
+      () -> {
+        console.drawStringCentered("Azimuth Abs. Pos.", Font.FONT_5X8, 5, true);
+        int y = 2 * Font.FONT_5X8.getOuterHeight();
+        for (int i = 0; i < 4; i++) {
+          var m = measures.get(2 * i);
+          var line = String.format("%s = %d", m.measure.getName(),
+              (int) m.measure.getMeasurement().getAsDouble());
+          console.drawString(m.previous, Font.FONT_5X8, 2, y, false);
+          console.drawString(line, Font.FONT_5X8, 2, y, true);
+          m.previous = line;
+          y += Font.FONT_5X8.getOuterHeight();
+        }
+//        for (var m : measures) {
+//          var line = String.format("%s = %d", m.measure.getName(),
+//              (int) m.measure.getMeasurement().getAsDouble());
+//          console.drawString(m.previous, Font.FONT_5X8, 2, y, false);
+//          console.drawString(line, Font.FONT_5X8, 2, y, true);
+//          m.previous = line;
+//          y += Font.FONT_5X8.getOuterHeight();
+//        }
       },
       () -> console.clear()
   );
@@ -53,7 +75,7 @@ public class ConsoleSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     screens.get(screenIndex % screens.size()).run();
-    console.periodic();
+//    console.periodic();
   }
 
   public void writeString(String value, int x, int y) {
