@@ -109,7 +109,7 @@ public class RobotContainer {
 //    List<Translation2d> waypoints = Arrays.asList(new Translation2d(1, 1), new Translation2d(2, -1));
 //    Pose2d end = new Pose2d(3, 0, new Rotation2d());
     List<Translation2d> waypoints = Collections.singletonList(new Translation2d(1, 0));
-    Pose2d end = new Pose2d(2, 0, new Rotation2d());
+    Pose2d end = new Pose2d(5, 0, new Rotation2d());
 
     var trajectory = TrajectoryGenerator.generateTrajectory(start, waypoints, end, config);
 
@@ -124,7 +124,10 @@ public class RobotContainer {
     trajectoryMeta.put("waypoints", waypoints);
     trajectoryMeta.put("endPose", end);
     meta.put("trajectory", trajectoryMeta);
-    return new DriveTrajectoryCommand(driveSubsystem, trajectory, meta);
+
+    var command = new DriveTrajectoryCommand(driveSubsystem, trajectory, meta);
+    telemetryService.register(command);
+    return command;
   }
 
   /**

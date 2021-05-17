@@ -138,7 +138,14 @@ public class DriveSubsystem extends MeasurableSubsystem {
   @Override
   public Set<Measure> getMeasures() {
     return Set
-        .of(new Measure("Gyro Angle (degrees)", () -> swerveDrive.getHeading().getDegrees()));
+        .of(
+            new Measure("Gyro Rotation2d (deg)", () -> swerveDrive.getHeading().getDegrees()),
+            new Measure("Gyro Angle (deg)", swerveDrive::getGyroAngle),
+            new Measure("Odometry X", () -> swerveDrive.getPoseMeters().getX()),
+            new Measure("Odometry Y", () -> swerveDrive.getPoseMeters().getY()),
+            new Measure("Odometry Rotation2d (deg)",
+                () -> swerveDrive.getPoseMeters().getRotation().getDegrees())
+        );
   }
 
 
