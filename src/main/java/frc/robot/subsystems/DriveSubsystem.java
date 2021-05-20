@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.swerve.SwerveDrive;
+import org.strykeforce.swerve.SwerveModule;
 import org.strykeforce.swerve.TalonSwerveModule;
 import org.strykeforce.telemetry.TelemetryService;
 import org.strykeforce.telemetry.measurable.MeasurableSubsystem;
@@ -79,6 +80,10 @@ public class DriveSubsystem extends MeasurableSubsystem {
    */
   public SwerveDriveKinematics getSwerveDriveKinematics() {
     return swerveDrive.getKinematics();
+  }
+
+  public SwerveModule[] getSwerveModules() {
+    return swerveDrive.getSwerveModules();
   }
 
   /**

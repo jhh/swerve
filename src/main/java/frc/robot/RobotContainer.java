@@ -10,25 +10,20 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
-import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.DriveConstants;
-import frc.robot.commands.DriveTrajectoryCommand;
+import frc.robot.commands.ActivityCommandGroup;
 import frc.robot.subsystems.ConsoleSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.telemetry.TelemetryController;
 import org.strykeforce.telemetry.TelemetryService;
+import org.strykeforce.trapper.TrapperSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -47,7 +42,10 @@ public class RobotContainer {
   private final ConsoleSubsystem consoleSubsystem = new ConsoleSubsystem();
   private final DriveSubsystem driveSubsystem = new DriveSubsystem(telemetryService,
       consoleSubsystem);
+  private final TrapperSubsystem trapperSubsystem = new TrapperSubsystem("http://192.168.3.3:3003");
   private final Joystick joystick = new Joystick(0);
+  private final ActivityCommandGroup activityCommandGroup = new ActivityCommandGroup(
+      trapperSubsystem, driveSubsystem);
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -65,6 +63,7 @@ public class RobotContainer {
         }
         , driveSubsystem));
     telemetryService.register(driveSubsystem);
+    telemetryService.register(activityCommandGroup.getDriveTrajectoryCommand());
     telemetryService.start();
   }
 
@@ -87,8 +86,7 @@ public class RobotContainer {
         return true;
       }
     });
-    new JoystickButton(joystick, InterlinkButton.X.id)
-        .whenPressed(getLogTrajectoryCommand());
+    new JoystickButton(joystick, InterlinkButton.X.id).whenPressed(activityCommandGroup);
 
     new JoystickButton(joystick, InterlinkButton.RESET.id)
         .whenPressed(driveSubsystem::resetGyro, driveSubsystem);
@@ -101,34 +99,6 @@ public class RobotContainer {
             driveSubsystem);
   }
 
-  private Command getLogTrajectoryCommand() {
-    var config = new TrajectoryConfig(2, 4);
-    config.setKinematics(driveSubsystem.getSwerveDriveKinematics());
-
-    Pose2d start = new Pose2d(0, 0, new Rotation2d());
-//    List<Translation2d> waypoints = Arrays.asList(new Translation2d(1, 1), new Translation2d(2, -1));
-//    Pose2d end = new Pose2d(3, 0, new Rotation2d());
-    List<Translation2d> waypoints = Collections.singletonList(new Translation2d(1, 0));
-    Pose2d end = new Pose2d(5, 0, new Rotation2d());
-
-    var trajectory = TrajectoryGenerator.generateTrajectory(start, waypoints, end, config);
-
-    var meta = new HashMap<String, Object>();
-    meta.put("name", "Trajectory Testing");
-    meta.put("description", "2.0m x-direction trajectory");
-    meta.put("version", "a30f0b6");
-    meta.put("simulator", Boolean.FALSE);
-    meta.put("trajectoryTime", trajectory.getTotalTimeSeconds());
-    var trajectoryMeta = new HashMap<String, Object>();
-    trajectoryMeta.put("startPose", start);
-    trajectoryMeta.put("waypoints", waypoints);
-    trajectoryMeta.put("endPose", end);
-    meta.put("trajectory", trajectoryMeta);
-
-    var command = new DriveTrajectoryCommand(driveSubsystem, trajectory, meta);
-    telemetryService.register(command);
-    return command;
-  }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
