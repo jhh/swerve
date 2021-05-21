@@ -74,7 +74,7 @@ public class ConsoleSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    screens.get(screenIndex % screens.size()).run();
+//    screens.get(screenIndex % screens.size()).run();
 //    console.periodic();
   }
 

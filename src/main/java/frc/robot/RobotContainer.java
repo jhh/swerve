@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotController;
@@ -18,8 +19,10 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.NetworkButton;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.commands.DriveTrajectoryCommand;
+import frc.robot.commands.TimedDriveCommand;
 import frc.robot.subsystems.ConsoleSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import java.util.Collections;
@@ -99,6 +102,9 @@ public class RobotContainer {
               driveSubsystem.resetOdometry(new Pose2d(0, 0, new Rotation2d()));
             },
             driveSubsystem);
+
+    var entry = NetworkTableInstance.getDefault().getEntry("Trigger");
+    new NetworkButton(entry).whenPressed(new TimedDriveCommand(driveSubsystem));
   }
 
   private Command getLogTrajectoryCommand() {
