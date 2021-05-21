@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.swerve.SwerveDrive;
+import org.strykeforce.swerve.SwerveModule;
 import org.strykeforce.swerve.TalonSwerveModule;
 import org.strykeforce.telemetry.TelemetryService;
 import org.strykeforce.telemetry.measurable.MeasurableSubsystem;
@@ -28,7 +29,7 @@ public class DriveSubsystem extends MeasurableSubsystem {
   /**
    * Uses the Third Coast SwerveDrive.
    */
-  public DriveSubsystem(TelemetryService telemetryService, ConsoleSubsystem consoleSubsystem) {
+  public DriveSubsystem(TelemetryService telemetryService) {
     var moduleBuilder = new TalonSwerveModule.Builder()
         .driveGearRatio(DriveConstants.kDriveGearRatio)
         .wheelDiameterInches(DriveConstants.kWheelDiameterInches)
@@ -60,12 +61,6 @@ public class DriveSubsystem extends MeasurableSubsystem {
       swerveModules[i].loadAndSetAzimuthZeroReference();
       telemetryService.register(azimuthTalon);
       telemetryService.register(driveTalon);
-
-      var azimuthName = String.format("azimuth %d", i);
-      consoleSubsystem.register(new Measure(azimuthName,
-          () -> azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF));
-      consoleSubsystem.register(
-          new Measure(azimuthName, () -> ((int) azimuthTalon.getSelectedSensorPosition()) & 0xFFF));
     }
 
     swerveDrive = new SwerveDrive(swerveModules);
@@ -79,6 +74,13 @@ public class DriveSubsystem extends MeasurableSubsystem {
    */
   public SwerveDriveKinematics getSwerveDriveKinematics() {
     return swerveDrive.getKinematics();
+  }
+
+  /**
+   * Returns the configured swerve drive modules.
+   */
+  public SwerveModule[] getSwerveModules() {
+    return swerveDrive.getSwerveModules();
   }
 
   /**
