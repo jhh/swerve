@@ -4,33 +4,39 @@
 
 package frc.robot;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
+import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
+import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.NetworkButton;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.commands.ActivityCommandGroup;
 import frc.robot.subsystems.ConsoleSubsystem;
+import frc.robot.commands.DriveTrajectoryCommand;
+import frc.robot.commands.TimedDriveCommand;
 import frc.robot.subsystems.DriveSubsystem;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.strykeforce.console.ConsoleSubsystem;
 import org.strykeforce.telemetry.TelemetryController;
 import org.strykeforce.telemetry.TelemetryService;
 import org.strykeforce.trapper.TrapperSubsystem;
 
-/**
- * This class is where the bulk of the robot should be declared. Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
- * subsystems, commands, and button mappings) should be declared here.
- */
+
 public class RobotContainer {
 
   private static final Logger logger = LoggerFactory.getLogger(RobotContainer.class);
@@ -39,19 +45,15 @@ public class RobotContainer {
 
   // The robot's subsystems and commands are defined here...
   private final TelemetryService telemetryService = new TelemetryService(TelemetryController::new);
-  private final ConsoleSubsystem consoleSubsystem = new ConsoleSubsystem();
-  private final DriveSubsystem driveSubsystem = new DriveSubsystem(telemetryService,
-      consoleSubsystem);
+  private final ConsoleSubsystem consoleSubsystem = new ConsoleSubsystem(false);
+  private final DriveSubsystem driveSubsystem = new DriveSubsystem(telemetryService);
   private final TrapperSubsystem trapperSubsystem = new TrapperSubsystem("http://192.168.3.3:3003");
   private final Joystick joystick = new Joystick(0);
   private final ActivityCommandGroup activityCommandGroup = new ActivityCommandGroup(
       trapperSubsystem, driveSubsystem);
 
-  /**
-   * The container for the robot. Contains subsystems, OI devices, and commands.
-   */
+
   public RobotContainer() {
-    // Configure the button bindings
     configureButtonBindings();
 
     driveSubsystem.setDefaultCommand(new RunCommand(
@@ -62,31 +64,18 @@ public class RobotContainer {
           driveSubsystem.drive(vx, vy, omega);
         }
         , driveSubsystem));
+
     telemetryService.register(driveSubsystem);
     telemetryService.register(activityCommandGroup.getDriveTrajectoryCommand());
     telemetryService.start();
   }
 
-  /**
-   * Use this method to define your button->command mappings. Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-   */
+
   private void configureButtonBindings() {
-    Button userButton = new Button() {
-      @Override
-      public boolean get() {
-        return RobotController.getUserButton();
-      }
-    };
-    userButton.whenPressed(new InstantCommand(consoleSubsystem::toggle, consoleSubsystem) {
-      @Override
-      public boolean runsWhenDisabled() {
-        return true;
-      }
-    });
-    new JoystickButton(joystick, InterlinkButton.X.id).whenPressed(activityCommandGroup);
+    new Button(RobotController::getUserButton).whenPressed(new PrintCommand("user button pressed"));
+
+    new JoystickButton(joystick, InterlinkButton.X.id)
+        .whenPressed(getLogTrajectoryCommand());
 
     new JoystickButton(joystick, InterlinkButton.RESET.id)
         .whenPressed(driveSubsystem::resetGyro, driveSubsystem);
@@ -97,6 +86,9 @@ public class RobotContainer {
               driveSubsystem.resetOdometry(new Pose2d(0, 0, new Rotation2d()));
             },
             driveSubsystem);
+
+    var entry = NetworkTableInstance.getDefault().getEntry("Trigger");
+    new NetworkButton(entry).whenPressed(new TimedDriveCommand(driveSubsystem));
   }
 
 

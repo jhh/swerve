@@ -29,7 +29,7 @@ public class DriveSubsystem extends MeasurableSubsystem {
   /**
    * Uses the Third Coast SwerveDrive.
    */
-  public DriveSubsystem(TelemetryService telemetryService, ConsoleSubsystem consoleSubsystem) {
+  public DriveSubsystem(TelemetryService telemetryService) {
     var moduleBuilder = new TalonSwerveModule.Builder()
         .driveGearRatio(DriveConstants.kDriveGearRatio)
         .wheelDiameterInches(DriveConstants.kWheelDiameterInches)
@@ -61,12 +61,6 @@ public class DriveSubsystem extends MeasurableSubsystem {
       swerveModules[i].loadAndSetAzimuthZeroReference();
       telemetryService.register(azimuthTalon);
       telemetryService.register(driveTalon);
-
-      var azimuthName = String.format("azimuth %d", i);
-      consoleSubsystem.register(new Measure(azimuthName,
-          () -> azimuthTalon.getSensorCollection().getPulseWidthPosition() & 0xFFF));
-      consoleSubsystem.register(
-          new Measure(azimuthName, () -> ((int) azimuthTalon.getSelectedSensorPosition()) & 0xFFF));
     }
 
     swerveDrive = new SwerveDrive(swerveModules);
@@ -82,6 +76,13 @@ public class DriveSubsystem extends MeasurableSubsystem {
     return swerveDrive.getKinematics();
   }
 
+  public SwerveModule[] getSwerveModules() {
+    return swerveDrive.getSwerveModules();
+  }
+
+  /**
+   * Returns the configured swerve drive modules.
+   */
   public SwerveModule[] getSwerveModules() {
     return swerveDrive.getSwerveModules();
   }
