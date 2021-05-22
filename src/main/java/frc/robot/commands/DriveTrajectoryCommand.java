@@ -12,8 +12,6 @@ import edu.wpi.first.wpilibj.trajectory.Trajectory.State;
 import edu.wpi.first.wpilibj.trajectory.TrapezoidProfile;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.subsystems.DriveSubsystem;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
@@ -21,10 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.telemetry.measurable.Measurable;
 import org.strykeforce.telemetry.measurable.Measure;
-import org.strykeforce.trapper.Action;
 import org.strykeforce.trapper.ActionCommand;
-import org.strykeforce.trapper.Session;
 import org.strykeforce.trapper.Trace;
+import org.strykeforce.trapper.TrapperSubsystem;
 
 public class DriveTrajectoryCommand extends ActionCommand implements Measurable {
 
@@ -38,29 +35,33 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
   private Pose2d odometryPose = new Pose2d();
   private ChassisSpeeds speeds = new ChassisSpeeds();
 
-  public DriveTrajectoryCommand(DriveSubsystem driveSubsystem, Trajectory trajectory,
-      Map<String, Object> meta) {
+  public DriveTrajectoryCommand(DriveSubsystem driveSubsystem, TrapperSubsystem trapperSubsystem,
+      Trajectory trajectory, Map<String, Object> meta) {
+    super(trapperSubsystem);
     this.driveSubsystem = driveSubsystem;
     this.trajectory = trajectory;
-    getAction().getMeta().putAll(meta);
-    addRequirements(driveSubsystem);
-
-    var measures = getAction().getMeasures();
-    measures.add("traj_accel");
-    measures.add("traj_curvature");
-    measures.add("traj_pose_x");
-    measures.add("traj_pose_y");
-    measures.add("traj_pose_degrees");
-    measures.add("traj_time");
-    measures.add("traj_vel");
-    measures.add("gyro_degrees");
-    measures.add("hc_vx");
-    measures.add("hc_vy");
-    measures.add("hc_omega");
-    measures.add("od_pose_x");
-    measures.add("od_pose_y");
-    measures.add("od_pose_degrees");
     logger.info("loaded trajectory with total time = {} sec", trajectory.getTotalTimeSeconds());
+
+    addRequirements(driveSubsystem, trapperSubsystem);
+
+    if (trapperSubsystem.isEnabled()) {
+      getAction().getMeta().putAll(meta);
+      var measures = getAction().getMeasures();
+      measures.add("traj_accel");
+      measures.add("traj_curvature");
+      measures.add("traj_pose_x");
+      measures.add("traj_pose_y");
+      measures.add("traj_pose_degrees");
+      measures.add("traj_time");
+      measures.add("traj_vel");
+      measures.add("gyro_degrees");
+      measures.add("hc_vx");
+      measures.add("hc_vy");
+      measures.add("hc_omega");
+      measures.add("od_pose_x");
+      measures.add("od_pose_y");
+      measures.add("od_pose_degrees");
+    }
   }
 
   @Override
@@ -91,6 +92,10 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
   @NotNull
   @Override
   public Trace getTrace() {
+    if (!getTrapperSubsystem().isEnabled()) {
+      throw new IllegalStateException("Trapper subsystem is not enabled");
+    }
+
     var trace = new Trace((int) Math.round(state.timeSeconds * 1000));
     var data = trace.getData();
     data.add(state.accelerationMetersPerSecondSq);

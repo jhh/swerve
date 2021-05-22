@@ -18,39 +18,44 @@ import org.strykeforce.trapper.TrapperSubsystem;
 public class ActivityCommandGroup extends SequentialCommandGroup {
 
   private final DriveSubsystem driveSubsystem;
+  private final TrapperSubsystem trapperSubsystem;
   private final DriveTrajectoryCommand driveTrajectoryCommand;
   private Activity activity = new Activity("ActivityCommandGroup");
   private Action action;
 
 
-  public ActivityCommandGroup(TrapperSubsystem trapperSubsystem,
-      DriveSubsystem driveSubsystem) {
+  public ActivityCommandGroup(TrapperSubsystem trapperSubsystem, DriveSubsystem driveSubsystem) {
     this.driveSubsystem = driveSubsystem;
+    this.trapperSubsystem = trapperSubsystem;
+
     addRequirements(trapperSubsystem, driveSubsystem);
     driveTrajectoryCommand = createDriveTrajectoryCommand();
-    activity.getMeta().put("description", "Jif trajectory following");
-    addCommands(
-        driveTrajectoryCommand,
-        new PostCommand(trapperSubsystem,
-            () -> trapperSubsystem.postAsync(activity),
-            interrupted -> activity = trapperSubsystem.getActivity())
-        ,
-        new PostCommand(trapperSubsystem,
-            () -> {
-              action = driveTrajectoryCommand.getAction();
-              action.setActivity(activity.getUrl());
-              trapperSubsystem.postAsync(action);
-            },
-            interrupted -> action = trapperSubsystem.getAction()),
-        new PostCommand(trapperSubsystem,
-            () -> {
-              var traces = driveTrajectoryCommand.getTraces();
-              traces.forEach(t -> t.setAction(action.getId()));
-              trapperSubsystem.post(traces);
-            },
-            interrupted -> {
-            })
-    );
+    addCommands(driveTrajectoryCommand);
+
+    if (trapperSubsystem.isEnabled()) {
+      activity.getMeta().put("description", "Jif trajectory following");
+      addCommands(
+          new PostCommand(trapperSubsystem,
+              () -> trapperSubsystem.postAsync(activity),
+              interrupted -> activity = trapperSubsystem.getActivity())
+          ,
+          new PostCommand(trapperSubsystem,
+              () -> {
+                action = driveTrajectoryCommand.getAction();
+                action.setActivity(activity.getUrl());
+                trapperSubsystem.postAsync(action);
+              },
+              interrupted -> action = trapperSubsystem.getAction()),
+          new PostCommand(trapperSubsystem,
+              () -> {
+                var traces = driveTrajectoryCommand.getTraces();
+                traces.forEach(t -> t.setAction(action.getId()));
+                trapperSubsystem.post(traces);
+              },
+              interrupted -> {
+              })
+      );
+    }
   }
 
   public DriveTrajectoryCommand getDriveTrajectoryCommand() {
@@ -81,7 +86,6 @@ public class ActivityCommandGroup extends SequentialCommandGroup {
     trajectoryMeta.put("endPose", end);
     meta.put("trajectory", trajectoryMeta);
 
-    var command = new DriveTrajectoryCommand(driveSubsystem, trajectory, meta);
-    return command;
+    return new DriveTrajectoryCommand(driveSubsystem, trapperSubsystem, trajectory, meta);
   }
 }

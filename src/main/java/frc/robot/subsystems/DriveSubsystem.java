@@ -76,10 +76,6 @@ public class DriveSubsystem extends MeasurableSubsystem {
     return swerveDrive.getKinematics();
   }
 
-  public SwerveModule[] getSwerveModules() {
-    return swerveDrive.getSwerveModules();
-  }
-
   /**
    * Returns the configured swerve drive modules.
    */
