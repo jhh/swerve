@@ -10,11 +10,8 @@ import edu.wpi.first.wpilibj.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.trajectory.Trajectory.State;
 import edu.wpi.first.wpilibj.trajectory.TrapezoidProfile;
-import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.subsystems.DriveSubsystem;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
@@ -22,31 +19,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.strykeforce.telemetry.measurable.Measurable;
 import org.strykeforce.telemetry.measurable.Measure;
-import org.strykeforce.trapper.Action;
-import org.strykeforce.trapper.Session;
+import org.strykeforce.trapper.ActionCommand;
 import org.strykeforce.trapper.Trace;
+import org.strykeforce.trapper.TrapperSubsystem;
 
-public class DriveTrajectoryCommand extends CommandBase implements Measurable {
+public class DriveTrajectoryCommand extends ActionCommand implements Measurable {
 
   private static final Logger logger = LoggerFactory.getLogger(DriveTrajectoryCommand.class);
 
   private final DriveSubsystem driveSubsystem;
   private final Trajectory trajectory;
-  private final Map<String, Object> meta;
   private final Timer timer = new Timer();
   private HolonomicDriveController holonomicDriveController;
-  private Trapper trapper;
   private Trajectory.State state = new State();
   private Pose2d odometryPose = new Pose2d();
   private ChassisSpeeds speeds = new ChassisSpeeds();
 
-  public DriveTrajectoryCommand(DriveSubsystem driveSubsystem, Trajectory trajectory,
-      Map<String, Object> meta) {
+  public DriveTrajectoryCommand(DriveSubsystem driveSubsystem, TrapperSubsystem trapperSubsystem,
+      Trajectory trajectory, Map<String, Object> meta) {
+    super(trapperSubsystem);
     this.driveSubsystem = driveSubsystem;
     this.trajectory = trajectory;
-    this.meta = meta;
-    hasRequirement(driveSubsystem);
     logger.info("loaded trajectory with total time = {} sec", trajectory.getTotalTimeSeconds());
+
+    addRequirements(driveSubsystem, trapperSubsystem);
+
+    if (trapperSubsystem.isEnabled()) {
+      getAction().getMeta().putAll(meta);
+      var measures = getAction().getMeasures();
+      measures.add("traj_accel");
+      measures.add("traj_curvature");
+      measures.add("traj_pose_x");
+      measures.add("traj_pose_y");
+      measures.add("traj_pose_degrees");
+      measures.add("traj_time");
+      measures.add("traj_vel");
+      measures.add("gyro_degrees");
+      measures.add("hc_vx");
+      measures.add("hc_vy");
+      measures.add("hc_omega");
+      measures.add("od_pose_x");
+      measures.add("od_pose_y");
+      measures.add("od_pose_degrees");
+    }
   }
 
   @Override
@@ -59,9 +74,6 @@ public class DriveTrajectoryCommand extends CommandBase implements Measurable {
 
     holonomicDriveController.setEnabled(true);
 
-    if (Trapper.isEnabled) {
-      trapper = new Trapper("http://192.168.3.3:3003", meta, driveSubsystem);
-    }
     driveSubsystem.resetOdometry(trajectory.getInitialPose());
     timer.reset();
     timer.start();
@@ -74,18 +86,39 @@ public class DriveTrajectoryCommand extends CommandBase implements Measurable {
     speeds = holonomicDriveController.calculate(odometryPose, state, Rotation2d.fromDegrees(0));
     driveSubsystem.move(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond,
         speeds.omegaRadiansPerSecond, true);
-    if (Trapper.isEnabled) {
-      trapper.logState(state, speeds, odometryPose);
+    super.execute();
+  }
+
+  @NotNull
+  @Override
+  public Trace getTrace() {
+    if (!getTrapperSubsystem().isEnabled()) {
+      throw new IllegalStateException("Trapper subsystem is not enabled");
     }
+
+    var trace = new Trace((int) Math.round(state.timeSeconds * 1000));
+    var data = trace.getData();
+    data.add(state.accelerationMetersPerSecondSq);
+    data.add(state.curvatureRadPerMeter);
+    data.add(state.poseMeters.getX());
+    data.add(state.poseMeters.getY());
+    data.add(state.poseMeters.getRotation().getDegrees());
+    data.add(state.timeSeconds);
+    data.add(state.velocityMetersPerSecond);
+    data.add(driveSubsystem.getHeading().getDegrees());
+    data.add(speeds.vxMetersPerSecond);
+    data.add(speeds.vyMetersPerSecond);
+    data.add(speeds.omegaRadiansPerSecond);
+    data.add(odometryPose.getX());
+    data.add(odometryPose.getY());
+    data.add(odometryPose.getRotation().getDegrees());
+
+    return trace;
   }
 
   @Override
   public void end(boolean interrupted) {
     driveSubsystem.drive(0.0, 0.0, 0.0);
-
-    if (Trapper.isEnabled) {
-      trapper.post();
-    }
   }
 
   @Override
@@ -123,71 +156,5 @@ public class DriveTrajectoryCommand extends CommandBase implements Measurable {
 //        new Measure("Odom. Y", () -> odometryPose.getY()),
 //        new Measure("Odom. Degrees", () -> odometryPose.getRotation().getDegrees())
     );
-  }
-
-  private static class Trapper {
-
-    final static boolean isEnabled = false;
-
-    final DriveSubsystem driveSubsystem;
-    final List<Trace> traces = new ArrayList<>();
-    final Session session;
-    int actionId;
-
-    Trapper(String url, Map<String, Object> meta, DriveSubsystem driveSubsystem) {
-      this.driveSubsystem = driveSubsystem;
-      session = new Session(url);
-      meta.put("command", DriveTrajectoryCommand.class.getSimpleName());
-      Action action = new Action(meta.get("name").toString());
-      action.setMeta(meta);
-      var measures = action.getMeasures();
-      measures.add("traj_accel");
-      measures.add("traj_curvature");
-      measures.add("traj_pose_x");
-      measures.add("traj_pose_y");
-      measures.add("traj_pose_degrees");
-      measures.add("traj_time");
-      measures.add("traj_vel");
-      measures.add("gyro_degrees");
-      measures.add("hc_vx");
-      measures.add("hc_vy");
-      measures.add("hc_omega");
-      measures.add("od_pose_x");
-      measures.add("od_pose_y");
-      measures.add("od_pose_degrees");
-
-      action = session.post(action);
-      if (action.getId() == null) {
-        logger.error("action failed to post - id was null");
-        return;
-      }
-      actionId = action.getId();
-    }
-
-    void logState(Trajectory.State state, ChassisSpeeds speeds, Pose2d odometryPose) {
-      var trace = new Trace((int) Math.round(state.timeSeconds * 1000));
-      trace.setAction(actionId);
-      traces.add(trace);
-      var data = trace.getData();
-      data.add(state.accelerationMetersPerSecondSq);
-      data.add(state.curvatureRadPerMeter);
-      data.add(state.poseMeters.getX());
-      data.add(state.poseMeters.getY());
-      data.add(state.poseMeters.getRotation().getDegrees());
-      data.add(state.timeSeconds);
-      data.add(state.velocityMetersPerSecond);
-      data.add(driveSubsystem.getHeading().getDegrees());
-      data.add(speeds.vxMetersPerSecond);
-      data.add(speeds.vyMetersPerSecond);
-      data.add(speeds.omegaRadiansPerSecond);
-      data.add(odometryPose.getX());
-      data.add(odometryPose.getY());
-      data.add(odometryPose.getRotation().getDegrees());
-    }
-
-    void post() {
-      session.post(traces);
-    }
-
   }
 }

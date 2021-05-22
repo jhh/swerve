@@ -1,5 +1,6 @@
 plugins {
     id "java"
+    id "idea"
     id "org.jetbrains.kotlin.jvm" version "1.5.0"
     id "edu.wpi.first.GradleRIO" version "2021.2.2"
 }
@@ -40,6 +41,10 @@ deploy {
 
 // Set this to true to enable desktop support.
 def includeDesktopSupport = false
+
+repositories {
+    mavenLocal()
+}
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 4.
@@ -97,4 +102,11 @@ sim {
 jar {
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
 }
