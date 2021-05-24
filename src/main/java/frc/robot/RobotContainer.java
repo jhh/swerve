@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.NetworkButton;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.commands.ActivityCommandGroup;
-import frc.robot.commands.TimedDriveCommand;
 import frc.robot.subsystems.DriveSubsystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,8 @@ public class RobotContainer {
   private final TelemetryService telemetryService = new TelemetryService(TelemetryController::new);
   private final ConsoleSubsystem consoleSubsystem = new ConsoleSubsystem(false);
   private final DriveSubsystem driveSubsystem = new DriveSubsystem(telemetryService);
-  private final TrapperSubsystem trapperSubsystem = new TrapperSubsystem("http://192.168.3.3:3003", false);
+  private final TrapperSubsystem trapperSubsystem = new TrapperSubsystem("http://192.168.3.3:3003",
+      false);
   private final Joystick joystick = new Joystick(0);
   private final ActivityCommandGroup activityCommandGroup = new ActivityCommandGroup(
       trapperSubsystem, driveSubsystem);
@@ -77,7 +77,8 @@ public class RobotContainer {
             driveSubsystem);
 
     var entry = NetworkTableInstance.getDefault().getEntry("Trigger");
-    new NetworkButton(entry).whenPressed(new TimedDriveCommand(driveSubsystem));
+    new NetworkButton(entry)
+        .whenPressed(activityCommandGroup.andThen(() -> entry.setBoolean(false), driveSubsystem));
   }
 
 

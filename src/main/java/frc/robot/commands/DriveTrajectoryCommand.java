@@ -30,6 +30,7 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
   private final DriveSubsystem driveSubsystem;
   private final Trajectory trajectory;
   private final Timer timer = new Timer();
+  private boolean isTimerStarted;
   private HolonomicDriveController holonomicDriveController;
   private Trajectory.State state = new State();
   private Pose2d odometryPose = new Pose2d();
@@ -66,9 +67,10 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
 
   @Override
   public void initialize() {
-    var p = 5.0;
+    var p = 6.0;
+    var d = p / 100.0;
     holonomicDriveController = new HolonomicDriveController(
-        new PIDController(p, 0, 0), new PIDController(p, 0, 0),
+        new PIDController(p, 0, d), new PIDController(p, 0, d),
         new ProfiledPIDController(-2.5, 0, 0,
             new TrapezoidProfile.Constraints(DriveConstants.kMaxOmega / 2.0, 3.14)));
 
@@ -76,11 +78,16 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
 
     driveSubsystem.resetOdometry(trajectory.getInitialPose());
     timer.reset();
-    timer.start();
+    isTimerStarted = false;
+//    timer.start();
   }
 
   @Override
   public void execute() {
+    if (!isTimerStarted) {
+      isTimerStarted = true;
+      timer.start();
+    }
     state = trajectory.sample(timer.get());
     odometryPose = driveSubsystem.getPoseMeters();
     speeds = holonomicDriveController.calculate(odometryPose, state, Rotation2d.fromDegrees(0));

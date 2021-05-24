@@ -26,10 +26,10 @@ public class TimedDriveCommand extends CommandBase {
     timer.start();
   }
 
-  @Override
-  public void execute() {
-    driveSubsystem.move(2.0, 0.0, 0.0, false);
-  }
+//  @Override
+//  public void execute() {
+//    driveSubsystem.move(2.0, 0.0, 0.0, false);
+//  }
 
   @Override
   public void end(boolean interrupted) {

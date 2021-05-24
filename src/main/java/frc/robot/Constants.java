@@ -28,7 +28,7 @@ public final class Constants {
 
   public static final class DriveConstants {
 
-    public static final double kWheelDiameterInches = 3.0;
+    public static final double kWheelDiameterInches = 3.0 * (508.0 / 504.0);
     public static final double kMaxSpeedMetersPerSecond = 3.53568;
     public static final double kMaxOmega =
         (kMaxSpeedMetersPerSecond / Math.hypot(0.525 / 2.0, 0.765 / 2.0))
