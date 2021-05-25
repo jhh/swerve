@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.trajectory.TrajectoryConfig;
 import edu.wpi.first.wpilibj.trajectory.TrajectoryGenerator;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.subsystems.DriveSubsystem;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -63,14 +64,14 @@ public class ActivityCommandGroup extends SequentialCommandGroup {
   }
 
   private DriveTrajectoryCommand createDriveTrajectoryCommand() {
-    var config = new TrajectoryConfig(2, 4);
+    var config = new TrajectoryConfig(3, 6);
     config.setKinematics(driveSubsystem.getSwerveDriveKinematics());
 
     Pose2d start = new Pose2d(0, 0, new Rotation2d());
-//    List<Translation2d> waypoints = Arrays.asList(new Translation2d(1, 1), new Translation2d(2, -1));
+    List<Translation2d> waypoints = Arrays.asList(new Translation2d(1, 0.5), new Translation2d(2, -0.5));
 //    Pose2d end = new Pose2d(3, 0, new Rotation2d());
-    List<Translation2d> waypoints = Collections.singletonList(new Translation2d(1, 0));
-    Pose2d end = new Pose2d(5, 0, new Rotation2d());
+//    List<Translation2d> waypoints = Collections.singletonList(new Translation2d(1, 0));
+    Pose2d end = new Pose2d(3, 0, new Rotation2d());
 
     var trajectory = TrajectoryGenerator.generateTrajectory(start, waypoints, end, config);
 
