@@ -63,6 +63,7 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
       measures.add("od_pose_y");
       measures.add("od_pose_degrees");
     }
+    timer.start();
   }
 
   @Override
@@ -78,16 +79,16 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
 
     driveSubsystem.resetOdometry(trajectory.getInitialPose());
     timer.reset();
-    isTimerStarted = false;
+//    isTimerStarted = false;
 //    timer.start();
   }
 
   @Override
   public void execute() {
-    if (!isTimerStarted) {
-      isTimerStarted = true;
-      timer.start();
-    }
+//    if (!isTimerStarted) {
+//      isTimerStarted = true;
+//      timer.start();
+//    }
     state = trajectory.sample(timer.get());
     odometryPose = driveSubsystem.getPoseMeters();
     speeds = holonomicDriveController.calculate(odometryPose, state, Rotation2d.fromDegrees(0));

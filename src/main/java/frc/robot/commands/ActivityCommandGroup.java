@@ -64,8 +64,8 @@ public class ActivityCommandGroup extends SequentialCommandGroup {
   }
 
   private DriveTrajectoryCommand createDriveTrajectoryCommand() {
-    var config = new TrajectoryConfig(3, 6);
-    config.setKinematics(driveSubsystem.getSwerveDriveKinematics());
+    var config = new TrajectoryConfig(1.5, 6);
+//    config.setKinematics(driveSubsystem.getSwerveDriveKinematics());
 
     Pose2d start = new Pose2d(3, -2, new Rotation2d());
     List<Translation2d> waypoints = Arrays.asList(
