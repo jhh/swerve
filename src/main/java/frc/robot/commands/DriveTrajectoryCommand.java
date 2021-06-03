@@ -91,7 +91,7 @@ public class DriveTrajectoryCommand extends ActionCommand implements Measurable 
 //    }
     state = trajectory.sample(timer.get());
     odometryPose = driveSubsystem.getPoseMeters();
-    speeds = holonomicDriveController.calculate(odometryPose, state, Rotation2d.fromDegrees(0));
+    speeds = holonomicDriveController.calculate(odometryPose, state, Rotation2d.fromDegrees(90));
     driveSubsystem.move(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond,
         speeds.omegaRadiansPerSecond, true);
     super.execute();

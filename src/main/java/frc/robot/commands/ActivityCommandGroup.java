@@ -67,16 +67,13 @@ public class ActivityCommandGroup extends SequentialCommandGroup {
     var config = new TrajectoryConfig(1.5, 6);
 //    config.setKinematics(driveSubsystem.getSwerveDriveKinematics());
 
-    Pose2d start = new Pose2d(3, -2, new Rotation2d());
+    Pose2d start = new Pose2d(0, 0, new Rotation2d());
     List<Translation2d> waypoints = Arrays.asList(
-        new Translation2d(4.5, -1.5),
-        new Translation2d(4.5, -2.5),
-        new Translation2d(1.5, -1.5),
-        new Translation2d(1.5, -2.5)
+        new Translation2d(1.5, 0)
     );
 //    Pose2d end = new Pose2d(3, 0, new Rotation2d());
 //    List<Translation2d> waypoints = Collections.singletonList(new Translation2d(1, 0));
-    Pose2d end = new Pose2d(3, -2, new Rotation2d());
+    Pose2d end = new Pose2d(3, 0, new Rotation2d());
 
     var trajectory = TrajectoryGenerator.generateTrajectory(start, waypoints, end, config);
 
