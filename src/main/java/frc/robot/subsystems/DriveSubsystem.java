@@ -5,10 +5,10 @@ import static frc.robot.Constants.kTalonConfigTimeout;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonFX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import edu.wpi.first.wpilibj.geometry.Pose2d;
-import edu.wpi.first.wpilibj.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.geometry.Translation2d;
-import edu.wpi.first.wpilibj.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import frc.robot.Constants.DriveConstants;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
@@ -142,7 +142,6 @@ public class DriveSubsystem extends MeasurableSubsystem {
     return Set
         .of(
             new Measure("Gyro Rotation2d (deg)", () -> swerveDrive.getHeading().getDegrees()),
-            new Measure("Gyro Angle (deg)", swerveDrive::getGyroAngle),
             new Measure("Odometry X", () -> swerveDrive.getPoseMeters().getX()),
             new Measure("Odometry Y", () -> swerveDrive.getPoseMeters().getY()),
             new Measure("Odometry Rotation2d (deg)",
