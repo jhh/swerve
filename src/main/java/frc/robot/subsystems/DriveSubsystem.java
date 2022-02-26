@@ -30,12 +30,12 @@ public class DriveSubsystem extends MeasurableSubsystem {
    * Uses the Third Coast SwerveDrive.
    */
   public DriveSubsystem(TelemetryService telemetryService) {
-    var moduleBuilder = new TalonSwerveModule.Builder()
+    var moduleBuilder = new CustomSwerveModule.Builder()
         .driveGearRatio(DriveConstants.kDriveGearRatio)
         .wheelDiameterInches(DriveConstants.kWheelDiameterInches)
         .driveMaximumMetersPerSecond(DriveConstants.kMaxSpeedMetersPerSecond);
 
-    TalonSwerveModule[] swerveModules = new TalonSwerveModule[4];
+    CustomSwerveModule[] swerveModules = new CustomSwerveModule[4];
     Translation2d[] wheelLocations = DriveConstants.getWheelLocationMeters();
 
     for (int i = 0; i < 4; i++) {
